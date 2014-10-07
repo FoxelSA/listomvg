@@ -1,0 +1,125 @@
+cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
+
+project(gnoproj C CXX)
+
+set(CMAKE_CXX_COMPILER g++)
+
+set(CMAKE_BUILD_TYPE Debug)
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
+    "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    set(warnings "-Wall -Wextra -Werror")
+    set(cxx_flags "-std=c++11")
+endif()
+
+if (NOT CONFIGURED_ONCE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${warnings} ${cxx_flags}"
+        CACHE STRING "Flags used by the compiler during all build types." FORCE)
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${warnings}"
+        CACHE STRING "Flags used by the compiler during all build types." FORCE)
+endif()
+
+set(GNOPROJ_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
+find_package(PkgConfig)
+
+# opencv
+find_package(OpenCV REQUIRED)
+
+# libtiff
+pkg_check_modules(PC_LIBTIFF QUIET libtiff)
+set(LIBTIFF_DEFINITIONS ${PC_LIBTIFF_CFLAGS_OTHER})
+
+find_path(LIBTIFF_INCLUDE_DIR tiff.h
+  HINTS ${PC_LIBTIFF_INCLUDEDIR} ${PC_LIBTIFF_INCLUDE_DIRS}
+  PATH_SUFFIXES libtiff )
+find_library(LIBTIFF_LIBRARY NAMES tiff libtiff
+  HINTS ${PC_LIBTIFF_LIBDIR} ${PC_LIBTIFF_LIBRARY_DIRS} )
+
+# libxml2
+pkg_check_modules(PC_LIBXML QUIET libxml-2.0)
+set(LIBXML2_DEFINITIONS ${PC_LIBXML_CFLAGS_OTHER})
+
+find_path(LIBXML2_INCLUDE_DIR libxml/xpath.h
+          HINTS ${PC_LIBXML_INCLUDEDIR} ${PC_LIBXML_INCLUDE_DIRS}
+          PATH_SUFFIXES libxml2 )
+
+find_library(LIBXML2_LIBRARY NAMES xml2 libxml2
+             HINTS ${PC_LIBXML_LIBDIR} ${PC_LIBXML_LIBRARY_DIRS} )
+
+# libboost
+pkg_check_modules(PC_LIBBOOST QUIET libboost-filesystem)
+set(LIBBOOST_DEFINITIONS ${PC_LIBBOOST_CFLAGS_OTHER})
+
+find_path(LIBBOOST_INCLUDE_DIR boost/filesystem.hpp
+  HINTS ${PC_LIBBOOST_INCLUDEDIR} ${PC_LIBBOOST_INCLUDE_DIRS}
+          PATH_SUFFIXES boost )
+
+find_library(LIBBOOST_FILESYSTEM_LIBRARY NAMES boost_filesystem libboost_filesystem
+   HINTS ${PC_LIBBOOST_LIBDIR} ${PC_LIBBOOST_LIBRARY_DIRS} )
+find_library(LIBBOOST_SYSTEM_LIBRARY NAMES boost_system libboost_system
+   HINTS ${PC_LIBBOOST_LIBDIR} ${PC_LIBBOOST_LIBRARY_DIRS} )
+find_library(LIBBOOST_REGEX_LIBRARY NAMES boost_regex libboost_regex
+   HINTS ${PC_LIBBOOST_LIBDIR} ${PC_LIBBOOST_LIBRARY_DIRS} )
+
+# libgnomonic
+add_custom_target(
+  libgnomonic
+  COMMAND make
+  WORKING_DIRECTORY ${GNOPROJ_SOURCE_DIR}/../lib/libgnomonic
+)
+set(LIBGNOMONIC_INCLUDE_DIR ${GNOPROJ_SOURCE_DIR}/../lib/libgnomonic/src)
+set(LIBGNOMONIC_LIBS ${GNOPROJ_SOURCE_DIR}/../lib/libgnomonic/bin/libgnomonic.a)
+
+# libinter
+set(LIBINTER_INCLUDE_DIR ${GNOPROJ_SOURCE_DIR}/../lib/libgnomonic/lib/libinter/src)
+set(LIBINTER_LIBS ${GNOPROJ_SOURCE_DIR}/../lib/libgnomonic/lib/libinter/bin/libinter.a)
+
+# libelphelphg
+add_custom_target(
+  elphelphg
+  WORKING_DIRECTORY ${GNOPROJ_SOURCE_DIR}/../lib/elphelphg
+  COMMAND cmake ./src/
+  COMMAND make
+)
+
+set(LIBELPHELPHG_INCLUDE_DIR ${GNOPROJ_SOURCE_DIR}/../lib/elphelphg/src)
+set(LIBELPHELPHG_LIBS ${GNOPROJ_SOURCE_DIR}/../lib/elphelphg/elphelphg/libelphelphg.so)
+
+# includes
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${LIBELPHELPHG_INCLUDE_DIR}
+  ${OpenCV_INCLUDE_DIRS}
+  ${LIBXML2_INCLUDE_DIR}
+  ${LIBGNOMONIC_INCLUDE_DIR}
+  ${LIBINTER_INCLUDE_DIR}
+  ${LIBBOOST_INCLUDE_DIR}
+  ${LIBTIFF_INCLUDE_DIR}
+)
+
+# libraries
+set(GNOPROJ_LIBRARY_LIST
+  ${LIBELPHELPHG_LIBS}
+  ${OpenCV_LIBS}
+  ${LIBXML2_LIBRARY}
+  ${LIBGNOMONIC_LIBS}
+  ${LIBBOOST_SYSTEM_LIBRARY}
+  ${LIBBOOST_FILESYSTEM_LIBRARY}
+  ${LIBBOOST_REGEX_LIBRARY}
+  ${LIBINTER_LIBS}
+  ${LIBTIFF_LIBRARY}
+ #  ${CMAKE_THREAD_LIBS_INIT}
+)
+# build gnoproj
+add_executable(gnoproj gnoproj.cpp)
+target_link_libraries(gnoproj
+  ${GNOPROJ_LIBRARY_LIST}
+)
+
+add_dependencies(gnoproj libgnomonic elphelphg)
+
+install(TARGETS gnoproj DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+
+set(CONFIGURED_ONCE TRUE CACHE INTERNAL
+    "A flag showing that CMake has configured at least once.")
