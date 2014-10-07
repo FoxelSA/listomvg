@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 
-project(gnoproj C CXX)
+project(listOMVG C CXX)
 
 set(CMAKE_CXX_COMPILER g++)
 
@@ -19,12 +19,9 @@ if (NOT CONFIGURED_ONCE)
         CACHE STRING "Flags used by the compiler during all build types." FORCE)
 endif()
 
-set(GNOPROJ_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(LISTOMVG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 find_package(PkgConfig)
-
-# opencv
-find_package(OpenCV REQUIRED)
 
 # libtiff
 pkg_check_modules(PC_LIBTIFF QUIET libtiff)
@@ -62,64 +59,44 @@ find_library(LIBBOOST_SYSTEM_LIBRARY NAMES boost_system libboost_system
 find_library(LIBBOOST_REGEX_LIBRARY NAMES boost_regex libboost_regex
    HINTS ${PC_LIBBOOST_LIBDIR} ${PC_LIBBOOST_LIBRARY_DIRS} )
 
-# libgnomonic
-add_custom_target(
-  libgnomonic
-  COMMAND make
-  WORKING_DIRECTORY ${GNOPROJ_SOURCE_DIR}/../lib/libgnomonic
-)
-set(LIBGNOMONIC_INCLUDE_DIR ${GNOPROJ_SOURCE_DIR}/../lib/libgnomonic/src)
-set(LIBGNOMONIC_LIBS ${GNOPROJ_SOURCE_DIR}/../lib/libgnomonic/bin/libgnomonic.a)
-
-# libinter
-set(LIBINTER_INCLUDE_DIR ${GNOPROJ_SOURCE_DIR}/../lib/libgnomonic/lib/libinter/src)
-set(LIBINTER_LIBS ${GNOPROJ_SOURCE_DIR}/../lib/libgnomonic/lib/libinter/bin/libinter.a)
-
 # libelphelphg
 add_custom_target(
   elphelphg
-  WORKING_DIRECTORY ${GNOPROJ_SOURCE_DIR}/../lib/elphelphg
+  WORKING_DIRECTORY ${LISTOMVG_SOURCE_DIR}/../third_party/elphelphg
   COMMAND cmake ./src/
   COMMAND make
 )
 
-set(LIBELPHELPHG_INCLUDE_DIR ${GNOPROJ_SOURCE_DIR}/../lib/elphelphg/src)
-set(LIBELPHELPHG_LIBS ${GNOPROJ_SOURCE_DIR}/../lib/elphelphg/elphelphg/libelphelphg.so)
+set(LIBELPHELPHG_INCLUDE_DIR ${LISTOMVG_SOURCE_DIR}/../third_party/elphelphg/src)
+set(LIBELPHELPHG_LIBS ${LISTOMVG_SOURCE_DIR}/../third_party/elphelphg/elphelphg/libelphelphg.so)
 
 # includes
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${LIBELPHELPHG_INCLUDE_DIR}
-  ${OpenCV_INCLUDE_DIRS}
   ${LIBXML2_INCLUDE_DIR}
-  ${LIBGNOMONIC_INCLUDE_DIR}
-  ${LIBINTER_INCLUDE_DIR}
   ${LIBBOOST_INCLUDE_DIR}
   ${LIBTIFF_INCLUDE_DIR}
 )
 
 # libraries
-set(GNOPROJ_LIBRARY_LIST
+set(LISTOMVG_LIBRARY_LIST
   ${LIBELPHELPHG_LIBS}
   ${OpenCV_LIBS}
   ${LIBXML2_LIBRARY}
-  ${LIBGNOMONIC_LIBS}
   ${LIBBOOST_SYSTEM_LIBRARY}
   ${LIBBOOST_FILESYSTEM_LIBRARY}
   ${LIBBOOST_REGEX_LIBRARY}
-  ${LIBINTER_LIBS}
   ${LIBTIFF_LIBRARY}
  #  ${CMAKE_THREAD_LIBS_INIT}
 )
-# build gnoproj
-add_executable(gnoproj gnoproj.cpp)
-target_link_libraries(gnoproj
-  ${GNOPROJ_LIBRARY_LIST}
+# build listOMVG
+add_executable(listOMVG list.cpp)
+target_link_libraries(listOMVG
+  ${LISTOMVG_LIBRARY_LIST}
 )
 
-add_dependencies(gnoproj libgnomonic elphelphg)
-
-install(TARGETS gnoproj DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+add_dependencies(listOMVG elphelphg)
 
 set(CONFIGURED_ONCE TRUE CACHE INTERNAL
     "A flag showing that CMake has configured at least once.")
