@@ -253,7 +253,7 @@ int main(int argc, char **argv)
               os << ";"
                  << channel->R[0] << ";" << channel->R[1] << ";" << channel->R[2] << ";"
                  << channel->R[3] << ";" << channel->R[4] << ";" << channel->R[5] << ";"
-                 << channel->R[6] << ";" << channel->R[7] << ";" << channel->R[8] << ";" ;
+                 << channel->R[6] << ";" << channel->R[7] << ";" << channel->R[8] ;
 
               // export translation
               os << ";"
