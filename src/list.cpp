@@ -105,19 +105,18 @@ int main(int argc, char **argv)
     }
   }
 
-  if ( !simagejXmlFile.empty() && focalPixPermm!= -1.0)
+  if( simagejXmlFile.empty() )
   {
-     std::cerr << "\n Cannot combine -x and -f options " << std::endl;
+     std::cerr << "\n No ImageJ Xml file given " << std::endl;
      return EXIT_FAILURE;
   }
 
-  if( simagejXmlFile.empty() && focalPixPermm== -1.0 )
-  {
-     std::cerr << "\n No ImageJ Xml file or focal given " << std::endl;
-     return EXIT_FAILURE;
-  }
+  // Load imagej xml file
+   CameraArray e4pi(CameraArray::EYESIS4PI_CAMERA,simagejXmlFile.c_str());
 
+  // load image filename
   std::vector<std::string> vec_image = stlplus::folder_files( sImageDir );
+
   // Write the new file
   std::ofstream listTXT( stlplus::create_filespec( sOutputDir,
                                                    "lists.txt" ).c_str() );
@@ -138,6 +137,13 @@ int main(int argc, char **argv)
       const unsigned int width  = img->width;
       const unsigned int height = img->height;
 
+      // now load image, and do gnomonic projection
+      struct utils::imagefile_info *info=utils::imagefile_parsename(sImageFilename.c_str());
+      int channel_index=atoi(info->channel);
+
+      Channel *channel=e4pi.channel(channel_index);
+      SensorData *sensor=channel->sensor;
+
       std::ostringstream os;
 
       // Create list if focal is given
@@ -150,9 +156,15 @@ int main(int argc, char **argv)
               << 0 << ";" << 0 << ";" << 1 << std::endl;
       }
       // Create list if imagej-elphel file is given
-      if( !simagejXmlFile.empty() )
+      else
       {
-          std::cout << " Not yet implemented " << endl;
+          const double  focal = sensor->focalLength / (0.001 * sensor->pixelSize);
+          os << *iter_image << ";" << sensor->pixelCorrectionWidth
+             << ";" << sensor->pixelCorrectionHeight;
+          os << ";"
+             << focal << ";" << 0 << ";" << sensor->px0 << ";"
+             << 0 << ";" << focal << ";" << sensor->py0 << ";"
+             << 0 << ";" << 0 << ";" << 1 << std::endl;
       }
 
       // export list to file
