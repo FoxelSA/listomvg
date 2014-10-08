@@ -39,6 +39,7 @@
 #include "list.hpp"
 
 using namespace std;
+using namespace cv;
 using namespace elphelphg;
 
 
@@ -104,20 +105,17 @@ int main(int argc, char **argv)
     }
   }
 
-/*
-*  if (sKmatrix.size() > 0 && !checkIntrinsicStringValidity(sKmatrix) )
-*  {
-*    std::cerr << "\nInvalid K matrix input" << std::endl;
-*    return EXIT_FAILURE;
-*  }
-*
-*  if (sKmatrix.size() > 0 && focalPixPermm != -1.0)
-*  {
-*    std::cerr << "\nCannot combine -f and -k options" << std::endl;
-*    return EXIT_FAILURE;
-*  }
-*
-*/
+  if ( !simagejXmlFile.empty() && focalPixPermm!= -1.0)
+  {
+     std::cerr << "\n Cannot combine -x and -f options " << std::endl;
+     return EXIT_FAILURE;
+  }
+
+  if( simagejXmlFile.empty() && focalPixPermm== -1.0 )
+  {
+     std::cerr << "\n No ImageJ Xml file or focal given " << std::endl;
+     return EXIT_FAILURE;
+  }
 
   std::vector<std::string> vec_image = stlplus::folder_files( sImageDir );
   // Write the new file
@@ -133,6 +131,33 @@ int main(int argc, char **argv)
       // Read meta data to fill width height and focalPixPermm
       std::string sImageFilename = stlplus::create_filespec( sImageDir, *iter_image );
 
+      // retrieve width and height of image using opencv
+      IplImage* img = cvLoadImage(sImageFilename.c_str(), CV_LOAD_IMAGE_COLOR );
+
+      // extract image width and height
+      const unsigned int width  = img->width;
+      const unsigned int height = img->height;
+
+      std::ostringstream os;
+
+      // Create list if focal is given
+      if( focalPixPermm > 0.0 )
+      {
+           os << *iter_image << ";" << width << ";" << height;
+           os << ";"
+              << focalPixPermm << ";" << 0 << ";" << width/2.0 << ";"
+              << 0 << ";" << focalPixPermm << ";" << height/2.0 << ";"
+              << 0 << ";" << 0 << ";" << 1 << std::endl;
+      }
+      // Create list if imagej-elphel file is given
+      if( !simagejXmlFile.empty() )
+      {
+          std::cout << " Not yet implemented " << endl;
+      }
+
+      // export list to file
+      std::cout << os.str();
+      listTXT << os.str();
     }
   }
   else

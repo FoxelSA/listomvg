@@ -62,6 +62,12 @@
 #include <elphelphg/sensorData.hpp>
 #include <elphelphg/utils.hpp>
 
+#include <opencv2/calib3d/calib3d.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv/cv.h>
+#include <opencv/highgui.h>
+
 #define DEBUG 0
 
 #endif /* GNOPROJ_HPP_ */
