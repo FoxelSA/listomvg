@@ -41,32 +41,102 @@
 using namespace std;
 using namespace elphelphg;
 
-int main(int argc, char** argv) {
 
-    /* Usage branch */
-    if ( argc<3 || argc>4 || !strcmp( argv[1], "help" ) || !strcmp(argv[1],"-h") || !strcmp(argv[1],"--help")  ) {
-        /* Display help */
-        printf( "Usage : %s <imagej_prefs_xml> <list_of_image.txt> \n\n",argv[0]);
-        return 1;
+int main(int argc, char **argv)
+{
+  CmdLine cmd;
+
+  std::string sImageDir,
+    sfileDatabase = "",
+    sOutputDir = "";
+
+  double focalPixPermm = -1.0;
+
+  cmd.add( make_option('i', sImageDir, "imageDirectory") );
+  cmd.add( make_option('d', sfileDatabase, "sensorWidthDatabase") );
+  cmd.add( make_option('o', sOutputDir, "outputDirectory") );
+  cmd.add( make_option('f', focalPixPermm, "focal") );
+
+  try {
+      if (argc == 1) throw std::string("Invalid command line parameter.");
+      cmd.process(argc, argv);
+  } catch(const std::string& s) {
+      std::cerr << "Usage: " << argv[0] << '\n'
+      << "[-i|--imageDirectory]\n"
+      << "[-d|--sensorWidthDatabase]\n"
+      << "[-o|--outputDirectory]\n"
+      << "[-f|--focal] (pixels)\n"
+      << std::endl;
+
+      std::cerr << s << std::endl;
+      return EXIT_FAILURE;
+  }
+
+  std::cout << " You called : " <<std::endl
+            << argv[0] << std::endl
+            << "--imageDirectory " << sImageDir << std::endl
+            << "--sensorWidthDatabase " << sfileDatabase << std::endl
+            << "--outputDirectory " << sOutputDir << std::endl
+            << "--focal " << focalPixPermm << std::endl;
+
+  if ( !stlplus::folder_exists( sImageDir ) )
+  {
+    std::cerr << "\nThe input directory doesn't exist" << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  if (sOutputDir.empty())
+  {
+    std::cerr << "\nInvalid output directory" << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  if ( !stlplus::folder_exists( sOutputDir ) )
+  {
+    if ( !stlplus::folder_create( sOutputDir ))
+    {
+      std::cerr << "\nCannot create output directory" << std::endl;
+      return EXIT_FAILURE;
     }
+  }
 
-    // load inputs
-    char *imagej_prefs_xml=argv[1];  //imagej xml configuration file
+/*
+*  if (sKmatrix.size() > 0 && !checkIntrinsicStringValidity(sKmatrix) )
+*  {
+*    std::cerr << "\nInvalid K matrix input" << std::endl;
+*    return EXIT_FAILURE;
+*  }
+*
+*  if (sKmatrix.size() > 0 && focalPixPermm != -1.0)
+*  {
+*    std::cerr << "\nCannot combine -f and -k options" << std::endl;
+*    return EXIT_FAILURE;
+*  }
+*
+*/
 
-    // now load image, and do gnomonic projection
-    try {
+  std::vector<std::string> vec_image = stlplus::folder_files( sImageDir );
+  // Write the new file
+  std::ofstream listTXT( stlplus::create_filespec( sOutputDir,
+                                                   "lists.txt" ).c_str() );
+  if ( listTXT )
+  {
+    std::sort(vec_image.begin(), vec_image.end());
+    for ( std::vector<std::string>::const_iterator iter_image = vec_image.begin();
+      iter_image != vec_image.end();
+      iter_image++ )
+    {
+      // Read meta data to fill width height and focalPixPermm
+      std::string sImageFilename = stlplus::create_filespec( sImageDir, *iter_image );
 
-      cout << " Hello world " << endl;
-      printf( " %s \n", imagej_prefs_xml);
-
-    } catch(std::exception &e) {
-      std::cerr << e.what() << std::endl;
-      return 1;
-    } catch(std::string &msg) {
-      std::cerr << msg << std::endl;
-      return 1;
-    } catch(...) {
-      std::cerr << "unhandled exception\n";
-      return 1;
     }
+  }
+  else
+  {
+     return EXIT_FAILURE;
+  }
+
+  listTXT.close();
+  return EXIT_SUCCESS;
+
 }

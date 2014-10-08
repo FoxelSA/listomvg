@@ -40,6 +40,19 @@
 #define LIST_HPP_
 
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <memory>
+#include <string>
+#include <vector>
+#include <iomanip>
+#include <ctype.h>
+#include <unistd.h>
+#include <string.h>
+
+#include "third_party/cmdLine/cmdLine.h"
+#include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
+
 #include <elphelphg/cameraArray.hpp>
 #include <elphelphg/camera.hpp>
 #include <elphelphg/channel.hpp>
@@ -48,10 +61,6 @@
 #include <elphelphg/eqrData.hpp>
 #include <elphelphg/sensorData.hpp>
 #include <elphelphg/utils.hpp>
-#include <iomanip>
-#include <ctype.h>
-#include <unistd.h>
-#include <string.h>
 
 #define DEBUG 0
 
