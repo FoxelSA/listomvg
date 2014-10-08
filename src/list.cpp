@@ -89,18 +89,21 @@ int main(int argc, char **argv)
             << "--outputDirectory " << sOutputDir << std::endl
             << "--focal " << focalPixPermm << std::endl;
 
+  // check if image dir exists
   if ( !stlplus::folder_exists( sImageDir ) )
   {
     std::cerr << "\nThe input directory doesn't exist" << std::endl;
     return EXIT_FAILURE;
   }
 
+  // check if output dir is given
   if (sOutputDir.empty())
   {
     std::cerr << "\nInvalid output directory" << std::endl;
     return EXIT_FAILURE;
   }
 
+  // if output dir is empty, create it
   if ( !stlplus::folder_exists( sOutputDir ) )
   {
     if ( !stlplus::folder_create( sOutputDir ))
@@ -149,6 +152,9 @@ int main(int argc, char **argv)
     return EXIT_FAILURE;
   }
 
+  //initialize rig map
+  std::map<std::string, unsigned int>  mapRigPerImage;
+
   // Write the new file
   std::ofstream listTXT( stlplus::create_filespec( sOutputDir,
                                                    "lists.txt" ).c_str() );
@@ -169,13 +175,15 @@ int main(int argc, char **argv)
       const unsigned int width  = img->width;
       const unsigned int height = img->height;
 
-      // now load image, and do gnomonic projection
+      // now load image information and keep channel index and timestamp
       struct utils::imagefile_info *info=utils::imagefile_parsename(sImageFilename.c_str());
       unsigned int channel_index=atoi(info->channel);
+      std::string timestamp=info->timestamp;
 
       Channel *channel=e4pi.channel(channel_index);
       SensorData *sensor=channel->sensor;
 
+      // create stream
       std::ostringstream os;
 
       // check if channel is kept
@@ -194,6 +202,21 @@ int main(int argc, char **argv)
       // export only kept channel
       if( bKeepChannel )
       {
+
+          // identify to which rig belongs the camera
+          unsigned int  rig_index;
+
+          // insert timestamp in the map
+          std::pair<std::map< std::string, unsigned int>::iterator,bool> ret;
+          ret = mapRigPerImage.insert ( std::pair<std::string, unsigned int>(timestamp, mapRigPerImage.size()) );
+          if(ret.second == true )
+          {
+              mapRigPerImage[timestamp] = mapRigPerImage.size()-1;
+          }
+
+          //extract rig_index
+          rig_index = mapRigPerImage[timestamp];
+
           // Create list if focal is given
           if( focalPixPermm > 0.0 )
           {
@@ -220,6 +243,12 @@ int main(int argc, char **argv)
           // if rigid rig, add some informations
           if(bRigidRig)
           {
+              // export rig index
+              os << ";" << rig_index;
+
+              // export channel
+              os << ";" << channel_index;
+
               // export rotation
               os << ";"
                  << channel->R[0] << ";" << channel->R[1] << ";" << channel->R[2] << ";"
