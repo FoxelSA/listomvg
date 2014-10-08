@@ -136,7 +136,7 @@ add_custom_target(
   COMMAND make
 )
 
-set(LIBSTL_LIBS ${LISTOMVG_SOURCE_DIR}/third_party/stlplus3/filesystemSimplified)
+set(LIBSTL_LIBS ${LISTOMVG_SOURCE_DIR}/third_party/stlplus3/libstlplus.a)
 
 # ==============================================================================
 # Third-party libraries:

@@ -47,13 +47,15 @@ int main(int argc, char **argv)
   CmdLine cmd;
 
   std::string sImageDir,
-    sfileDatabase = "",
+    sChannelFile = "",
+    simagejXmlFile = "",
     sOutputDir = "";
 
   double focalPixPermm = -1.0;
 
   cmd.add( make_option('i', sImageDir, "imageDirectory") );
-  cmd.add( make_option('d', sfileDatabase, "sensorWidthDatabase") );
+  cmd.add( make_option('c', sChannelFile, "channelFile") );
+  cmd.add( make_option('x', simagejXmlFile, "imagejXmlFile") );
   cmd.add( make_option('o', sOutputDir, "outputDirectory") );
   cmd.add( make_option('f', focalPixPermm, "focal") );
 
@@ -63,7 +65,8 @@ int main(int argc, char **argv)
   } catch(const std::string& s) {
       std::cerr << "Usage: " << argv[0] << '\n'
       << "[-i|--imageDirectory]\n"
-      << "[-d|--sensorWidthDatabase]\n"
+      << "[-c|--channelFile]\n"
+      << "[-x]--imagejXmlFile\n"
       << "[-o|--outputDirectory]\n"
       << "[-f|--focal] (pixels)\n"
       << std::endl;
@@ -75,7 +78,8 @@ int main(int argc, char **argv)
   std::cout << " You called : " <<std::endl
             << argv[0] << std::endl
             << "--imageDirectory " << sImageDir << std::endl
-            << "--sensorWidthDatabase " << sfileDatabase << std::endl
+            << "--channelFile " << sChannelFile << std::endl
+            << "--imagejXmlFile " << simagejXmlFile << std::endl
             << "--outputDirectory " << sOutputDir << std::endl
             << "--focal " << focalPixPermm << std::endl;
 
