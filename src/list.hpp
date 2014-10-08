@@ -70,4 +70,10 @@
 
 #define DEBUG 0
 
+enum Format {
+  Pnm, Png, Jpg, Tiff, Unknown
+};
+
+Format GetFormat(const char *c);
+
 #endif /* GNOPROJ_HPP_ */

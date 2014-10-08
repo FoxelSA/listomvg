@@ -42,6 +42,35 @@ using namespace std;
 using namespace cv;
 using namespace elphelphg;
 
+static bool CmpFormatExt(const char *a, const char *b) {
+  size_t len_a = strlen(a);
+  size_t len_b = strlen(b);
+  if (len_a != len_b) return false;
+  for (size_t i = 0; i < len_a; ++i)
+    if (tolower(a[i]) != tolower(b[i]))
+      return false;
+  return true;
+}
+
+Format GetFormat(const char *c) {
+  const char *p = strrchr (c, '.');
+
+  if (p == NULL)
+    return Unknown;
+
+  if (CmpFormatExt(p, ".png")) return Png;
+  if (CmpFormatExt(p, ".ppm")) return Pnm;
+  if (CmpFormatExt(p, ".pgm")) return Pnm;
+  if (CmpFormatExt(p, ".pbm")) return Pnm;
+  if (CmpFormatExt(p, ".pnm")) return Pnm;
+  if (CmpFormatExt(p, ".jpg")) return Jpg;
+  if (CmpFormatExt(p, ".jpeg")) return Jpg;
+  if (CmpFormatExt(p, ".tif")) return Tiff;
+  if (CmpFormatExt(p, ".tiff")) return Tiff;
+
+  cerr << "Error: Couldn't open " << c << " Unknown file format" << std::endl;
+  return Unknown;
+}
 
 int main(int argc, char **argv)
 {
@@ -53,13 +82,15 @@ int main(int argc, char **argv)
     sOutputDir = "";
 
   double focalPixPermm = -1.0;
-  bool   bRigidRig     = 0.0;
+  bool   bRigidRig     = false;
+  bool   bUseCalibPrincipalPoint = false;
 
   cmd.add( make_option('i', sImageDir, "imageDirectory") );
   cmd.add( make_option('c', sChannelFile, "channelFile") );
   cmd.add( make_option('x', simagejXmlFile, "imagejXmlFile") );
   cmd.add( make_option('o', sOutputDir, "outputDirectory") );
   cmd.add( make_option('r', bRigidRig, "rigidRig") );
+  cmd.add( make_option('p', bUseCalibPrincipalPoint, "useCalibPrincipalPoint") );
   cmd.add( make_option('f', focalPixPermm, "focal") );
 
   try {
@@ -74,6 +105,9 @@ int main(int argc, char **argv)
       << "[-r]--rigidRig \n"
       << "   -r 0 : no rigid rig \n"
       << "   -r 1 : with rigid rig structure\n"
+      << "[-p]--useCalibPrincipalPoint\n"
+      << "   -p 0 : do not use calibration principal point \n"
+      << "   -p 1 : use calibration principal point \n"
       << "[-f|--focal] (pixels)\n"
       << std::endl;
 
@@ -87,6 +121,8 @@ int main(int argc, char **argv)
             << "--channelFile " << sChannelFile << std::endl
             << "--imagejXmlFile " << simagejXmlFile << std::endl
             << "--outputDirectory " << sOutputDir << std::endl
+            << "--rigidRig " << bRigidRig << std::endl
+            << "--useCalibPrincipalPoint " << bUseCalibPrincipalPoint << std::endl
             << "--focal " << focalPixPermm << std::endl;
 
   // check if image dir exists
@@ -168,6 +204,10 @@ int main(int argc, char **argv)
       // Read meta data to fill width height and focalPixPermm
       std::string sImageFilename = stlplus::create_filespec( sImageDir, *iter_image );
 
+      // Test if the image format is supported:
+      if (GetFormat(sImageFilename.c_str()) == Unknown)
+        continue; // image cannot be opened
+
       // retrieve width and height of image using opencv
       IplImage* img = cvLoadImage(sImageFilename.c_str(), CV_LOAD_IMAGE_COLOR );
 
@@ -221,12 +261,22 @@ int main(int argc, char **argv)
           if( focalPixPermm > 0.0 )
           {
                os << *iter_image << ";" << width << ";" << height;
-               os << ";"
-                  << focalPixPermm << ";" << 0 << ";" << width/2.0 << ";"
-                  << 0 << ";" << focalPixPermm << ";" << height/2.0 << ";"
-                  << 0 << ";" << 0 << ";" << 1;
-          }
 
+              if(!bUseCalibPrincipalPoint)
+              {
+                   os << ";"
+                      << focalPixPermm << ";" << 0 << ";" << width/2.0 << ";"
+                      << 0 << ";" << focalPixPermm << ";" << height/2.0 << ";"
+                      << 0 << ";" << 0 << ";" << 1;
+              }
+              else
+              {
+                  os << ";"
+                     << focalPixPermm << ";" << 0 << ";" << sensor->px0 << ";"
+                     << 0 << ";" << focalPixPermm << ";" << sensor->py0 << ";"
+                     << 0 << ";" << 0 << ";" << 1;
+              }
+          }
           // Create list if imagej-elphel file is given
           else
           {
