@@ -110,9 +110,17 @@ int main(int argc, char **argv)
     }
   }
 
+  // check if imagej xml file is given
   if( simagejXmlFile.empty() )
   {
      std::cerr << "\n No ImageJ Xml file given " << std::endl;
+     return EXIT_FAILURE;
+  }
+
+  // check if channel file is given
+  if( sChannelFile.empty() )
+  {
+     std::cerr << "\n No Channel file given " << std::endl;
      return EXIT_FAILURE;
   }
 
@@ -121,6 +129,25 @@ int main(int argc, char **argv)
 
   // load image filename
   std::vector<std::string> vec_image = stlplus::folder_files( sImageDir );
+
+  // load kept channel
+  std::vector<unsigned int> keptChan;
+  std::ifstream  inFile(sChannelFile.c_str());
+  unsigned int chan;
+
+  if( inFile.is_open() )
+  {
+       while( inFile >> chan )
+         keptChan.push_back(chan);
+  }
+
+  inFile.close();
+
+  if( keptChan.empty() )
+  {
+    std::cerr << "\n No Channel image are kept " << std::endl;
+    return EXIT_FAILURE;
+  }
 
   // Write the new file
   std::ofstream listTXT( stlplus::create_filespec( sOutputDir,
@@ -144,33 +171,46 @@ int main(int argc, char **argv)
 
       // now load image, and do gnomonic projection
       struct utils::imagefile_info *info=utils::imagefile_parsename(sImageFilename.c_str());
-      int channel_index=atoi(info->channel);
+      unsigned int channel_index=atoi(info->channel);
 
       Channel *channel=e4pi.channel(channel_index);
       SensorData *sensor=channel->sensor;
 
       std::ostringstream os;
 
-      // Create list if focal is given
-      if( focalPixPermm > 0.0 )
+      // check if channel is kept
+      bool  bKeepChannel(0);
+
+      for(unsigned int i(0) ; i < keptChan.size() ; ++i )
       {
-           os << *iter_image << ";" << width << ";" << height;
-           os << ";"
-              << focalPixPermm << ";" << 0 << ";" << width/2.0 << ";"
-              << 0 << ";" << focalPixPermm << ";" << height/2.0 << ";"
-              << 0 << ";" << 0 << ";" << 1 << std::endl;
+          if( channel_index == keptChan[i] )
+            bKeepChannel = true;
       }
-      // Create list if imagej-elphel file is given
-      else
+
+      // export only kept channel
+      if( bKeepChannel )
       {
-          const double  focal = sensor->focalLength / (0.001 * sensor->pixelSize);
-          os << *iter_image << ";" << sensor->pixelCorrectionWidth
-             << ";" << sensor->pixelCorrectionHeight;
-          os << ";"
-             << focal << ";" << 0 << ";" << sensor->px0 << ";"
-             << 0 << ";" << focal << ";" << sensor->py0 << ";"
-             << 0 << ";" << 0 << ";" << 1 << std::endl;
-      }
+          // Create list if focal is given
+          if( focalPixPermm > 0.0 )
+          {
+               os << *iter_image << ";" << width << ";" << height;
+               os << ";"
+                  << focalPixPermm << ";" << 0 << ";" << width/2.0 << ";"
+                  << 0 << ";" << focalPixPermm << ";" << height/2.0 << ";"
+                  << 0 << ";" << 0 << ";" << 1 << std::endl;
+          }
+          // Create list if imagej-elphel file is given
+          else
+          {
+              const double  focal = sensor->focalLength / (0.001 * sensor->pixelSize);
+              os << *iter_image << ";" << sensor->pixelCorrectionWidth
+                 << ";" << sensor->pixelCorrectionHeight;
+              os << ";"
+                 << focal << ";" << 0 << ";" << sensor->px0 << ";"
+                 << 0 << ";" << focal << ";" << sensor->py0 << ";"
+                 << 0 << ";" << 0 << ";" << 1 << std::endl;
+          }
+        }
 
       // export list to file
       std::cout << os.str();
