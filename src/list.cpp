@@ -187,6 +187,10 @@ int main(int argc, char **argv)
             bKeepChannel = true;
       }
 
+      // compute optical center and rotation
+      channel->getLensCenterVector();
+      channel->getRotation();
+
       // export only kept channel
       if( bKeepChannel )
       {
@@ -197,8 +201,9 @@ int main(int argc, char **argv)
                os << ";"
                   << focalPixPermm << ";" << 0 << ";" << width/2.0 << ";"
                   << 0 << ";" << focalPixPermm << ";" << height/2.0 << ";"
-                  << 0 << ";" << 0 << ";" << 1 << std::endl;
+                  << 0 << ";" << 0 << ";" << 1;
           }
+
           // Create list if imagej-elphel file is given
           else
           {
@@ -208,8 +213,28 @@ int main(int argc, char **argv)
               os << ";"
                  << focal << ";" << 0 << ";" << sensor->px0 << ";"
                  << 0 << ";" << focal << ";" << sensor->py0 << ";"
-                 << 0 << ";" << 0 << ";" << 1 << std::endl;
+                 << 0 << ";" << 0 << ";" << 1;
+
           }
+
+          // if rigid rig, add some informations
+          if(bRigidRig)
+          {
+              // export rotation
+              os << ";"
+                 << channel->R[0] << ";" << channel->R[1] << ";" << channel->R[2] << ";"
+                 << channel->R[3] << ";" << channel->R[4] << ";" << channel->R[5] << ";"
+                 << channel->R[6] << ";" << channel->R[7] << ";" << channel->R[8] << ";" ;
+
+              // export translation
+              os << ";"
+                 << channel->lensCenterVector[0] << ";"
+                 << channel->lensCenterVector[1] << ";"
+                 << channel->lensCenterVector[2] ;
+          };
+
+          os << std::endl;
+
         }
 
       // export list to file
