@@ -53,11 +53,13 @@ int main(int argc, char **argv)
     sOutputDir = "";
 
   double focalPixPermm = -1.0;
+  bool   bRigidRig     = 0.0;
 
   cmd.add( make_option('i', sImageDir, "imageDirectory") );
   cmd.add( make_option('c', sChannelFile, "channelFile") );
   cmd.add( make_option('x', simagejXmlFile, "imagejXmlFile") );
   cmd.add( make_option('o', sOutputDir, "outputDirectory") );
+  cmd.add( make_option('r', bRigidRig, "rigidRig") );
   cmd.add( make_option('f', focalPixPermm, "focal") );
 
   try {
@@ -69,6 +71,9 @@ int main(int argc, char **argv)
       << "[-c|--channelFile]\n"
       << "[-x]--imagejXmlFile\n"
       << "[-o|--outputDirectory]\n"
+      << "[-r]--rigidRig \n"
+      << "   -r 0 : no rigid rig \n"
+      << "   -r 1 : with rigid rig structure\n"
       << "[-f|--focal] (pixels)\n"
       << std::endl;
 
