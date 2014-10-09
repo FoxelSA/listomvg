@@ -49,7 +49,7 @@ set(CMAKE_BUILD_TYPE Debug)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
     "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set(warnings "-Wall -Wextra -Werror")
+    set(warnings "-Wall -Wextra -pedantic")
     set(cxx_flags "-std=c++11")
 endif()
 
