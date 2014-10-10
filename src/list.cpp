@@ -307,9 +307,9 @@ int main(int argc, char **argv)
 
               // export translation
               os << ";"
-                 << channel->lensCenterVector[0] << ";"
-                 << channel->lensCenterVector[1] << ";"
-                 << channel->lensCenterVector[2] ;
+                 << channel->lensCenterVector[0] / 1000.0 << ";"
+                 << channel->lensCenterVector[1] / 1000.0 << ";"
+                 << channel->lensCenterVector[2] / 1000.0 ;
           };
 
           os << std::endl;
