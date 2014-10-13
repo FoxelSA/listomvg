@@ -170,14 +170,19 @@ int main(int argc, char **argv)
   std::vector<std::string> vec_image = stlplus::folder_files( sImageDir );
 
   // load kept channel
-  std::vector<unsigned int> keptChan;
+  std::vector< std::vector<unsigned int> > keptChan;
   std::ifstream  inFile(sChannelFile.c_str());
-  unsigned int chan;
+  unsigned int chan, compare;
 
   if( inFile.is_open() )
   {
-       while( inFile >> chan )
-         keptChan.push_back(chan);
+       while( inFile >> chan >> compare )
+       {
+         vector<unsigned int>  temp;
+         temp.push_back(chan);
+         temp.push_back(compare);
+         keptChan.push_back(temp);
+       }
   }
 
   inFile.close();
@@ -227,12 +232,16 @@ int main(int argc, char **argv)
       std::ostringstream os;
 
       // check if channel is kept
-      bool  bKeepChannel(0);
+      bool  bKeepChannel(false);
+      bool  bCompareChan(false);
 
       for(unsigned int i(0) ; i < keptChan.size() ; ++i )
       {
-          if( channel_index == keptChan[i] )
+          if( channel_index == keptChan[i][0] )
+          {
             bKeepChannel = true;
+            bCompareChan = keptChan[i][1];
+          }
       }
 
       // compute optical center and rotation
@@ -298,6 +307,9 @@ int main(int argc, char **argv)
 
               // export channel
               os << ";" << channel_index;
+
+              // export matching between rig image
+              os << ";" << bCompareChan;
 
               // export rotation
               os << ";"
