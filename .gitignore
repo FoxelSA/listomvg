@@ -4,3 +4,4 @@ doc/
 obj/
 src/third_party/stlplus3/*make*
 src/third_party/stlplus3/*Make*
+src/third_party/stlplus3/*.a
