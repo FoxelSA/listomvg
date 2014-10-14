@@ -170,18 +170,15 @@ int main(int argc, char **argv)
   std::vector<std::string> vec_image = stlplus::folder_files( sImageDir );
 
   // load kept channel
-  std::vector< std::vector<unsigned int> > keptChan;
+  std::vector< unsigned int > keptChan;
   std::ifstream  inFile(sChannelFile.c_str());
-  unsigned int chan, compare;
+  unsigned int chan;
 
   if( inFile.is_open() )
   {
-       while( inFile >> chan >> compare )
+       while( inFile >> chan )
        {
-         vector<unsigned int>  temp;
-         temp.push_back(chan);
-         temp.push_back(compare);
-         keptChan.push_back(temp);
+         keptChan.push_back(chan);
        }
   }
 
@@ -233,14 +230,12 @@ int main(int argc, char **argv)
 
       // check if channel is kept
       bool  bKeepChannel(false);
-      bool  bCompareChan(false);
 
       for(unsigned int i(0) ; i < keptChan.size() ; ++i )
       {
-          if( channel_index == keptChan[i][0] )
+          if( channel_index == keptChan[i] )
           {
             bKeepChannel = true;
-            bCompareChan = keptChan[i][1];
           }
       }
 
@@ -308,9 +303,6 @@ int main(int argc, char **argv)
               // export channel
               os << ";" << channel_index;
 
-              // export matching between rig image
-              os << ";" << bCompareChan;
-
               // export rotation
               os << ";"
                  << channel->R[0] << ";" << channel->R[1] << ";" << channel->R[2] << ";"
@@ -329,7 +321,7 @@ int main(int argc, char **argv)
         }
 
       // export list to file
-      std::cout << os.str();
+      // std::cout << os.str();
       listTXT << os.str();
     }
   }
