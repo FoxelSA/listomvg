@@ -323,6 +323,9 @@ int main(int argc, char **argv)
       // export list to file
       // std::cout << os.str();
       listTXT << os.str();
+
+      //free memory
+      cvReleaseImage(&img);
     }
   }
   else
