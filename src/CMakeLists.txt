@@ -66,8 +66,11 @@ set(LISTOMVG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 # OpenMP detection
 # ==============================================================================
 FIND_PACKAGE(OpenMP)
-  IF (OPENMP_FOUND)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+IF (OPENMP_FOUND)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  IF (NOT MSVC)
+    LIST(APPEND listOMVG_LIBRARY_DEPENDENCIES gomp)
+  ENDIF (NOT MSVC)
 ENDIF (OPENMP_FOUND)
 
 
@@ -179,7 +182,7 @@ set(LISTOMVG_LIBRARY_LIST
   ${LIBBOOST_REGEX_LIBRARY}
   ${LIBTIFF_LIBRARY}
   ${LIBSTL_LIBS}
- #  ${CMAKE_THREAD_LIBS_INIT}
+  ${listOMVG_LIBRARY_DEPENDENCIES}
 )
 
 # ==============================================================================

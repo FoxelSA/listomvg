@@ -295,16 +295,17 @@ int main(int argc, char **argv)
               intrinsic.push_back(channel->lensCenterVector[2] / 1000.0);
           };
 
-
-          ++my_progress_bar_image;
-
           //export info
           camAndIntrinsics.insert(std::make_pair(*iter_image, intrinsic));
         };
 
       //free memory
       cvReleaseImage(&img);
+      ++my_progress_bar_image;
     };
+
+    C_Progress_display my_progress_bar_export( camAndIntrinsics.size(),
+    std::cout, "\n Write list in file lists.txt :\n");
 
     // export list to file
     for ( int img = 0; img < (int) camAndIntrinsics.size(); ++img)
@@ -328,6 +329,8 @@ int main(int argc, char **argv)
         os << endl;
 
         listTXT << os.str();
+
+        ++my_progress_bar_export;
     }
 
   }
