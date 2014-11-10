@@ -199,10 +199,15 @@ int main(int argc, char **argv)
   if ( listTXT )
   {
     std::sort(vec_image.begin(), vec_image.end());
-    for ( std::vector<std::string>::const_iterator iter_image = vec_image.begin();
-      iter_image != vec_image.end();
-      iter_image++ )
+
+    // do a parallel loop to improve CPU TIME
+    #pragma omp parallel for
+    for ( int idx = 0; idx < (int) vec_image.size(); ++idx)
     {
+      //advance iterator
+      std::vector<std::string>::const_iterator iter_image = vec_image.begin();
+      std::advance(iter_image, idx);
+
       // Read meta data to fill width height and focalPixPermm
       std::string sImageFilename = stlplus::create_filespec( sImageDir, *iter_image );
 
