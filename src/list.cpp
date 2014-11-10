@@ -37,40 +37,11 @@
 
 
 #include "list.hpp"
+#include "progress.hpp"
 
 using namespace std;
 using namespace cv;
 using namespace elphelphg;
-
-static bool CmpFormatExt(const char *a, const char *b) {
-  size_t len_a = strlen(a);
-  size_t len_b = strlen(b);
-  if (len_a != len_b) return false;
-  for (size_t i = 0; i < len_a; ++i)
-    if (tolower(a[i]) != tolower(b[i]))
-      return false;
-  return true;
-}
-
-Format GetFormat(const char *c) {
-  const char *p = strrchr (c, '.');
-
-  if (p == NULL)
-    return Unknown;
-
-  if (CmpFormatExt(p, ".png")) return Png;
-  if (CmpFormatExt(p, ".ppm")) return Pnm;
-  if (CmpFormatExt(p, ".pgm")) return Pnm;
-  if (CmpFormatExt(p, ".pbm")) return Pnm;
-  if (CmpFormatExt(p, ".pnm")) return Pnm;
-  if (CmpFormatExt(p, ".jpg")) return Jpg;
-  if (CmpFormatExt(p, ".jpeg")) return Jpg;
-  if (CmpFormatExt(p, ".tif")) return Tiff;
-  if (CmpFormatExt(p, ".tiff")) return Tiff;
-
-  cerr << "Error: Couldn't open " << c << " Unknown file format" << std::endl;
-  return Unknown;
-}
 
 int main(int argc, char **argv)
 {
@@ -200,6 +171,12 @@ int main(int argc, char **argv)
   {
     std::sort(vec_image.begin(), vec_image.end());
 
+    // create output
+    std::set<imageNameAndIntrinsic> camAndIntrinsics;
+
+    C_Progress_display my_progress_bar_image( vec_image.size(),
+    std::cout, "\n List computation progession:\n");
+
     // do a parallel loop to improve CPU TIME
     #pragma omp parallel for
     for ( int idx = 0; idx < (int) vec_image.size(); ++idx)
@@ -230,9 +207,6 @@ int main(int argc, char **argv)
       Channel *channel=e4pi.channel(channel_index);
       SensorData *sensor=channel->sensor;
 
-      // create stream
-      std::ostringstream os;
-
       // check if channel is kept
       bool  bKeepChannel(false);
 
@@ -247,6 +221,9 @@ int main(int argc, char **argv)
       // compute optical center and rotation
       channel->getLensCenterVector();
       channel->getRotation();
+
+      // create output
+      std::vector <double> intrinsic;
 
       // export only kept channel
       if( bKeepChannel )
@@ -269,69 +246,90 @@ int main(int argc, char **argv)
           // Create list if focal is given
           if( focalPixPermm > 0.0 )
           {
-               os << *iter_image << ";" << width << ";" << height;
+               intrinsic.push_back(width);
+               intrinsic.push_back(height);
 
               if(!bUseCalibPrincipalPoint)
               {
-                   os << ";"
-                      << focalPixPermm << ";" << 0 << ";" << width/2.0 << ";"
-                      << 0 << ";" << focalPixPermm << ";" << height/2.0 << ";"
-                      << 0 << ";" << 0 << ";" << 1;
+                  intrinsic.push_back(focalPixPermm); intrinsic.push_back(0.0);           intrinsic.push_back(width /2.0);
+                  intrinsic.push_back(0.0);           intrinsic.push_back(focalPixPermm); intrinsic.push_back(height/2.0);
+                  intrinsic.push_back(0.0);           intrinsic.push_back(0.0);           intrinsic.push_back(1.0);
               }
               else
               {
-                  os << ";"
-                     << focalPixPermm << ";" << 0 << ";" << sensor->px0 << ";"
-                     << 0 << ";" << focalPixPermm << ";" << sensor->py0 << ";"
-                     << 0 << ";" << 0 << ";" << 1;
+                  intrinsic.push_back(focalPixPermm); intrinsic.push_back(0.0);           intrinsic.push_back(sensor->px0);
+                  intrinsic.push_back(0.0);           intrinsic.push_back(focalPixPermm); intrinsic.push_back(sensor->py0);
+                  intrinsic.push_back(0.0);           intrinsic.push_back(0.0);           intrinsic.push_back(1.0);
               }
           }
           // Create list if imagej-elphel file is given
           else
           {
-              const double  focal = sensor->focalLength / (0.001 * sensor->pixelSize);
-              os << *iter_image << ";" << sensor->pixelCorrectionWidth
-                 << ";" << sensor->pixelCorrectionHeight;
-              os << ";"
-                 << focal << ";" << 0 << ";" << sensor->px0 << ";"
-                 << 0 << ";" << focal << ";" << sensor->py0 << ";"
-                 << 0 << ";" << 0 << ";" << 1;
+              const double  focalPixPermm = sensor->focalLength / (0.001 * sensor->pixelSize);
 
+              intrinsic.push_back(sensor->pixelCorrectionWidth);
+              intrinsic.push_back(sensor->pixelCorrectionHeight);
+
+              intrinsic.push_back(focalPixPermm); intrinsic.push_back(0.0);           intrinsic.push_back(sensor->px0);
+              intrinsic.push_back(0.0);           intrinsic.push_back(focalPixPermm); intrinsic.push_back(sensor->py0);
+              intrinsic.push_back(0.0);           intrinsic.push_back(0.0);           intrinsic.push_back(1.0);
           }
 
           // if rigid rig, add some informations
           if(bRigidRig)
           {
               // export rig index
-              os << ";" << rig_index;
+              intrinsic.push_back(rig_index);
 
               // export channel
-              os << ";" << channel_index;
+              intrinsic.push_back(channel_index);
 
               // export rotation
-              os << ";"
-                 << channel->R[0] << ";" << channel->R[1] << ";" << channel->R[2] << ";"
-                 << channel->R[3] << ";" << channel->R[4] << ";" << channel->R[5] << ";"
-                 << channel->R[6] << ";" << channel->R[7] << ";" << channel->R[8] ;
+              intrinsic.push_back(channel->R[0]); intrinsic.push_back(channel->R[1]); intrinsic.push_back(channel->R[2]);
+              intrinsic.push_back(channel->R[3]); intrinsic.push_back(channel->R[4]); intrinsic.push_back(channel->R[5]);
+              intrinsic.push_back(channel->R[6]); intrinsic.push_back(channel->R[7]); intrinsic.push_back(channel->R[8]);
 
               // export translation
-              os << ";"
-                 << channel->lensCenterVector[0] / 1000.0 << ";"
-                 << channel->lensCenterVector[1] / 1000.0 << ";"
-                 << channel->lensCenterVector[2] / 1000.0 ;
+              intrinsic.push_back(channel->lensCenterVector[0] / 1000.0);
+              intrinsic.push_back(channel->lensCenterVector[1] / 1000.0);
+              intrinsic.push_back(channel->lensCenterVector[2] / 1000.0);
           };
 
-          os << std::endl;
 
-        }
+          ++my_progress_bar_image;
 
-      // export list to file
-      // std::cout << os.str();
-      listTXT << os.str();
+          //export info
+          camAndIntrinsics.insert(std::make_pair(*iter_image, intrinsic));
+        };
 
       //free memory
       cvReleaseImage(&img);
+    };
+
+    // export list to file
+    for ( int img = 0; img < (int) camAndIntrinsics.size(); ++img)
+    {
+        //advance iterator
+        std::set<imageNameAndIntrinsic>::const_iterator iter = camAndIntrinsics.begin();
+        std::advance(iter, img);
+
+        // create stream
+        std::ostringstream os;
+
+        os << iter->first ;
+
+        // retreive intrinsic info
+        std::vector<double> intrinsic = iter->second;
+
+        // export instrinsics
+        for(int j=0; j < (int) intrinsic.size() ; ++j )
+          os << ";"  << intrinsic[j];
+
+        os << endl;
+
+        listTXT << os.str();
     }
+
   }
   else
   {
