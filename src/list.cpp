@@ -234,10 +234,13 @@ int main(int argc, char **argv)
 
           // insert timestamp in the map
           std::pair<std::map< std::string, unsigned int>::iterator,bool> ret;
-          ret = mapRigPerImage.insert ( std::pair<std::string, unsigned int>(timestamp, mapRigPerImage.size()) );
-          if(ret.second == true )
+          #pragma omp critical
           {
-              mapRigPerImage[timestamp] = mapRigPerImage.size()-1;
+            ret = mapRigPerImage.insert ( std::pair<std::string, unsigned int>(timestamp, mapRigPerImage.size()) );
+            if(ret.second == true )
+            {
+                mapRigPerImage[timestamp] = mapRigPerImage.size()-1;
+            }
           }
 
           //extract rig_index
@@ -296,13 +299,19 @@ int main(int argc, char **argv)
           };
 
           //export info
+          #pragma omp critical
           camAndIntrinsics.insert(std::make_pair(*iter_image, intrinsic));
         };
 
       //free memory
       cvReleaseImage(&img);
-      ++my_progress_bar_image;
-    };
+
+      //update progress bar
+      #pragma omp critical
+      {
+        ++my_progress_bar_image;
+      }
+    }
 
     C_Progress_display my_progress_bar_export( camAndIntrinsics.size(),
     std::cout, "\n Write list in file lists.txt :\n");
