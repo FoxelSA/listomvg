@@ -1,5 +1,5 @@
  #
- #  listOMVG
+ #  listomvg
  #
  # Copyright (c) 2013-2014 FOXEL SA - http://foxel.ch
  # Please read <http://foxel.ch/license> for more information.
@@ -39,10 +39,10 @@
 
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 
-project(listOMVG C CXX)
+project(listomvg C CXX)
 
 # ==============================================================================
-# ListOMVG build options
+# listomvg build options
 # ==============================================================================
 set(CMAKE_CXX_COMPILER g++)
 set(CMAKE_BUILD_TYPE Debug)
@@ -69,13 +69,13 @@ FIND_PACKAGE(OpenMP)
 IF (OPENMP_FOUND)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
   IF (NOT MSVC)
-    LIST(APPEND listOMVG_LIBRARY_DEPENDENCIES gomp)
+    LIST(APPEND LISTOMVG_LIBRARY_DEPENDENCIES gomp)
   ENDIF (NOT MSVC)
 ENDIF (OPENMP_FOUND)
 
 
 # ==============================================================================
-# ListOMVG check for dependencies
+# listomvg check for dependencies
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
@@ -182,18 +182,18 @@ set(LISTOMVG_LIBRARY_LIST
   ${LIBBOOST_REGEX_LIBRARY}
   ${LIBTIFF_LIBRARY}
   ${LIBSTL_LIBS}
-  ${listOMVG_LIBRARY_DEPENDENCIES}
+  ${LISTOMVG_LIBRARY_DEPENDENCIES}
 )
 
 # ==============================================================================
 # Build Executable
 # ==============================================================================
-add_executable(listOMVG list.cpp)
-target_link_libraries(listOMVG
+add_executable(listomvg list.cpp)
+target_link_libraries(listomvg
   ${LISTOMVG_LIBRARY_LIST}
 )
 
-add_dependencies(listOMVG elphelphg stlplus)
+add_dependencies(listomvg elphelphg stlplus)
 
 set(CONFIGURED_ONCE TRUE CACHE INTERNAL
     "A flag showing that CMake has configured at least once.")
