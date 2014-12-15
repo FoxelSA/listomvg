@@ -5,7 +5,7 @@ For Elphel's camera, generate file lists.txt needed by openMVG, for rigid rig an
 
 ### Documentation
 
-Documentation can be consulted on the [wiki](https://github.com/baritone/listOMVG/wiki).
+Documentation can be consulted on the [wiki](https://github.com/foxelSA/listOMVG/wiki).
 
 ### Copyright
 
