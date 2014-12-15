@@ -127,13 +127,6 @@ int main(int argc, char **argv)
      return EXIT_FAILURE;
   }
 
-  // check if channel file is given
-  if( sChannelFile.empty() )
-  {
-     std::cerr << "\n No Channel file given " << std::endl;
-     return EXIT_FAILURE;
-  }
-
   // Load imagej xml file
    CameraArray e4pi(CameraArray::EYESIS4PI_CAMERA,simagejXmlFile.c_str());
 
@@ -142,23 +135,25 @@ int main(int argc, char **argv)
 
   // load kept channel
   std::vector< unsigned int > keptChan;
-  std::ifstream  inFile(sChannelFile.c_str());
-  unsigned int chan;
 
-  if( inFile.is_open() )
-  {
-       while( inFile >> chan )
-       {
-         keptChan.push_back(chan);
-       }
+  if( !sChannelFile.empty() ){
+    std::ifstream  inFile(sChannelFile.c_str());
+    unsigned int chan;
+
+    if( inFile.is_open() )
+    {
+         while( inFile >> chan )
+         {
+           keptChan.push_back(chan);
+         }
+    }
+
+    inFile.close();
   }
-
-  inFile.close();
 
   if( keptChan.empty() )
   {
-    std::cerr << "\n No Channel image are kept " << std::endl;
-    return EXIT_FAILURE;
+    std::cerr << "\n Keep all channels " << std::endl;
   }
 
   //initialize rig map
@@ -210,12 +205,16 @@ int main(int argc, char **argv)
       // check if channel is kept
       bool  bKeepChannel(false);
 
-      for(unsigned int i(0) ; i < keptChan.size() ; ++i )
+      // if no channel file is given, keep all images
+      if( keptChan.empty() )
+          bKeepChannel = true ;
+      else
       {
+        for(unsigned int i(0) ; i < keptChan.size() ; ++i )
+        {
           if( channel_index == keptChan[i] )
-          {
-            bKeepChannel = true;
-          }
+              bKeepChannel = true;
+        }
       }
 
       // compute optical center and rotation
