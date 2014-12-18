@@ -85,59 +85,16 @@ find_package(PkgConfig)
 find_package(OpenCV REQUIRED)
 
 # ------------------------------------------------------------------------------
-# libtiff
-# ------------------------------------------------------------------------------
-pkg_check_modules(PC_LIBTIFF QUIET libtiff)
-set(LIBTIFF_DEFINITIONS ${PC_LIBTIFF_CFLAGS_OTHER})
-
-find_path(LIBTIFF_INCLUDE_DIR tiff.h
-  HINTS ${PC_LIBTIFF_INCLUDEDIR} ${PC_LIBTIFF_INCLUDE_DIRS}
-  PATH_SUFFIXES libtiff )
-find_library(LIBTIFF_LIBRARY NAMES tiff libtiff
-  HINTS ${PC_LIBTIFF_LIBDIR} ${PC_LIBTIFF_LIBRARY_DIRS} )
-
-# ------------------------------------------------------------------------------
-# libxml2
-# ------------------------------------------------------------------------------
-pkg_check_modules(PC_LIBXML QUIET libxml-2.0)
-set(LIBXML2_DEFINITIONS ${PC_LIBXML_CFLAGS_OTHER})
-
-find_path(LIBXML2_INCLUDE_DIR libxml/xpath.h
-          HINTS ${PC_LIBXML_INCLUDEDIR} ${PC_LIBXML_INCLUDE_DIRS}
-          PATH_SUFFIXES libxml2 )
-
-find_library(LIBXML2_LIBRARY NAMES xml2 libxml2
-             HINTS ${PC_LIBXML_LIBDIR} ${PC_LIBXML_LIBRARY_DIRS} )
-
-# ------------------------------------------------------------------------------
-# libboost
-# ------------------------------------------------------------------------------
-pkg_check_modules(PC_LIBBOOST QUIET libboost-filesystem)
-set(LIBBOOST_DEFINITIONS ${PC_LIBBOOST_CFLAGS_OTHER})
-
-find_path(LIBBOOST_INCLUDE_DIR boost/filesystem.hpp
-  HINTS ${PC_LIBBOOST_INCLUDEDIR} ${PC_LIBBOOST_INCLUDE_DIRS}
-          PATH_SUFFIXES boost )
-
-find_library(LIBBOOST_FILESYSTEM_LIBRARY NAMES boost_filesystem libboost_filesystem
-   HINTS ${PC_LIBBOOST_LIBDIR} ${PC_LIBBOOST_LIBRARY_DIRS} )
-find_library(LIBBOOST_SYSTEM_LIBRARY NAMES boost_system libboost_system
-   HINTS ${PC_LIBBOOST_LIBDIR} ${PC_LIBBOOST_LIBRARY_DIRS} )
-find_library(LIBBOOST_REGEX_LIBRARY NAMES boost_regex libboost_regex
-   HINTS ${PC_LIBBOOST_LIBDIR} ${PC_LIBBOOST_LIBRARY_DIRS} )
-
-# ------------------------------------------------------------------------------
-# libelphelphg
+# libfastcal
 # ------------------------------------------------------------------------------
 add_custom_target(
-  elphelphg
-  WORKING_DIRECTORY ${LISTOMVG_SOURCE_DIR}/third_party/elphelphg
-  COMMAND cmake ./src/
+  fastcal
+  WORKING_DIRECTORY ${LISTOMVG_SOURCE_DIR}/third_party/libfastcal
   COMMAND make
 )
 
-set(LIBELPHELPHG_INCLUDE_DIR ${LISTOMVG_SOURCE_DIR}/third_party/elphelphg/src)
-set(LIBELPHELPHG_LIBS ${LISTOMVG_SOURCE_DIR}/third_party/elphelphg/elphelphg/libelphelphg.so)
+set(LIBFASTCAL_INCLUDE_DIR ${LISTOMVG_SOURCE_DIR}/third_party/libfastcal/src)
+set(LIBFASTCAL_LIBS ${LISTOMVG_SOURCE_DIR}/third_party/libfastcal/bin/libfastcal.a)
 
 # ------------------------------------------------------------------------------
 # stlplus
@@ -161,10 +118,7 @@ set(LIBSTL_LIBS ${LISTOMVG_SOURCE_DIR}/third_party/stlplus3/libstlplus.a)
 # ==============================================================================
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${LIBELPHELPHG_INCLUDE_DIR}
-  ${LIBXML2_INCLUDE_DIR}
-  ${LIBBOOST_INCLUDE_DIR}
-  ${LIBTIFF_INCLUDE_DIR}
+  ${LIFASTCAL_INCLUDE_DIR}
   ${LISTOMVG_SOURCE_DIR}/third_party/cmdLine
   ${LISTOMVG_SOURCE_DIR}/third_party/stlAddition
   ${LISTOMVG_SOURCE_DIR}/third_party/stlplus3/filesystemSimplified/
@@ -174,13 +128,8 @@ include_directories(
 # Library list
 # ==============================================================================
 set(LISTOMVG_LIBRARY_LIST
-  ${LIBELPHELPHG_LIBS}
+  ${LIBFASTCAL_LIBS}
   ${OpenCV_LIBS}
-  ${LIBXML2_LIBRARY}
-  ${LIBBOOST_SYSTEM_LIBRARY}
-  ${LIBBOOST_FILESYSTEM_LIBRARY}
-  ${LIBBOOST_REGEX_LIBRARY}
-  ${LIBTIFF_LIBRARY}
   ${LIBSTL_LIBS}
   ${LISTOMVG_LIBRARY_DEPENDENCIES}
 )
@@ -193,7 +142,7 @@ target_link_libraries(listomvg
   ${LISTOMVG_LIBRARY_LIST}
 )
 
-add_dependencies(listomvg elphelphg stlplus)
+add_dependencies(listomvg fastcal stlplus)
 
 set(CONFIGURED_ONCE TRUE CACHE INTERNAL
     "A flag showing that CMake has configured at least once.")
