@@ -48,16 +48,18 @@ int main(int argc, char **argv)
   std::string sImageDir,
     sChannelFile = "",
     smacAddress = "",
-    sOutputDir = "";
+    sOutputDir = "",
+    sMountPoint = "";
 
   double focalPixPermm = -1.0;
   bool   bRigidRig     = true;
   bool   bUseCalibPrincipalPoint = false;
 
   cmd.add( make_option('i', sImageDir, "imageDirectory") );
-  cmd.add( make_option('c', sChannelFile, "channelFile") );
   cmd.add( make_option('m', smacAddress, "macAddress") );
   cmd.add( make_option('o', sOutputDir, "outputDirectory") );
+  cmd.add( make_option('d', sMountPoint, "mountPoint") );
+  cmd.add( make_option('c', sChannelFile, "channelFile") );
   cmd.add( make_option('r', bRigidRig, "rigidRig") );
   cmd.add( make_option('p', bUseCalibPrincipalPoint, "useCalibPrincipalPoint") );
   cmd.add( make_option('f', focalPixPermm, "focal") );
@@ -68,9 +70,10 @@ int main(int argc, char **argv)
   } catch(const std::string& s) {
       std::cerr << "Usage: " << argv[0] << '\n'
       << "[-i|--imageDirectory]\n"
-      << "[-c|--channelFile]\n"
       << "[-m]--macAddress\n"
       << "[-o|--outputDirectory]\n"
+      << "[-d]--mountPoint]\n"
+      << "[-c|--channelFile]\n"
       << "[-r]--rigidRig \n"
       << "   -r 0 : no rigid rig \n"
       << "   -r 1 : with rigid rig structure\n"
@@ -87,9 +90,10 @@ int main(int argc, char **argv)
   std::cout << " You called : " <<std::endl
             << argv[0] << std::endl
             << "--imageDirectory " << sImageDir << std::endl
-            << "--channelFile " << sChannelFile << std::endl
             << "--macAddress " << smacAddress << std::endl
             << "--outputDirectory " << sOutputDir << std::endl
+            << "--mountPoint " << sMountPoint << std::endl
+            << "--channelFile " << sChannelFile << std::endl
             << "--rigidRig " << bRigidRig << std::endl
             << "--useCalibPrincipalPoint " << bUseCalibPrincipalPoint << std::endl
             << "--focal " << focalPixPermm << std::endl;
@@ -118,10 +122,17 @@ int main(int argc, char **argv)
     }
   }
 
-  // check if mac address file is given
+  // check if mac address is given
   if( smacAddress.empty() )
   {
      std::cerr << "\n No mac address given " << std::endl;
+     return EXIT_FAILURE;
+  }
+
+  // check if mount point is given
+  if( sMountPoint.empty() )
+  {
+     std::cerr << "\n No mount point given " << std::endl;
      return EXIT_FAILURE;
   }
 
@@ -146,9 +157,8 @@ int main(int argc, char **argv)
   lf_Real_t lfEntrance = 0.0;
 
   /* Creation and verification of the descriptor */
-  std::string data("/data/");
-  char *c_data = new char[data.length() + 1];
-  std::strcpy(c_data, data.c_str());
+  char *c_data = new char[sMountPoint.length() + 1];
+  std::strcpy(c_data, sMountPoint.c_str());
 
   char *c_mac = new char[smacAddress.length() + 1];
   std::strcpy(c_mac, smacAddress.c_str());
