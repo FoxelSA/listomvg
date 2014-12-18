@@ -118,7 +118,7 @@ set(LIBSTL_LIBS ${LISTOMVG_SOURCE_DIR}/third_party/stlplus3/libstlplus.a)
 # ==============================================================================
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${LIFASTCAL_INCLUDE_DIR}
+  ${LIBFASTCAL_INCLUDE_DIR}
   ${LISTOMVG_SOURCE_DIR}/third_party/cmdLine
   ${LISTOMVG_SOURCE_DIR}/third_party/stlAddition
   ${LISTOMVG_SOURCE_DIR}/third_party/stlplus3/filesystemSimplified/

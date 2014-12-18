@@ -40,8 +40,6 @@
 #include "progress.hpp"
 
 using namespace std;
-using namespace cv;
-using namespace elphelphg;
 
 int main(int argc, char **argv)
 {
@@ -49,16 +47,16 @@ int main(int argc, char **argv)
 
   std::string sImageDir,
     sChannelFile = "",
-    simagejXmlFile = "",
+    smacAddress = "",
     sOutputDir = "";
 
   double focalPixPermm = -1.0;
-  bool   bRigidRig     = false;
+  bool   bRigidRig     = true;
   bool   bUseCalibPrincipalPoint = false;
 
   cmd.add( make_option('i', sImageDir, "imageDirectory") );
   cmd.add( make_option('c', sChannelFile, "channelFile") );
-  cmd.add( make_option('x', simagejXmlFile, "imagejXmlFile") );
+  cmd.add( make_option('m', smacAddress, "macAddress") );
   cmd.add( make_option('o', sOutputDir, "outputDirectory") );
   cmd.add( make_option('r', bRigidRig, "rigidRig") );
   cmd.add( make_option('p', bUseCalibPrincipalPoint, "useCalibPrincipalPoint") );
@@ -71,7 +69,7 @@ int main(int argc, char **argv)
       std::cerr << "Usage: " << argv[0] << '\n'
       << "[-i|--imageDirectory]\n"
       << "[-c|--channelFile]\n"
-      << "[-x]--imagejXmlFile\n"
+      << "[-m]--macAddress\n"
       << "[-o|--outputDirectory]\n"
       << "[-r]--rigidRig \n"
       << "   -r 0 : no rigid rig \n"
@@ -90,7 +88,7 @@ int main(int argc, char **argv)
             << argv[0] << std::endl
             << "--imageDirectory " << sImageDir << std::endl
             << "--channelFile " << sChannelFile << std::endl
-            << "--imagejXmlFile " << simagejXmlFile << std::endl
+            << "--macAddress " << smacAddress << std::endl
             << "--outputDirectory " << sOutputDir << std::endl
             << "--rigidRig " << bRigidRig << std::endl
             << "--useCalibPrincipalPoint " << bUseCalibPrincipalPoint << std::endl
@@ -120,15 +118,115 @@ int main(int argc, char **argv)
     }
   }
 
-  // check if imagej xml file is given
-  if( simagejXmlFile.empty() )
+  // check if mac address file is given
+  if( smacAddress.empty() )
   {
-     std::cerr << "\n No ImageJ Xml file given " << std::endl;
+     std::cerr << "\n No mac address given " << std::endl;
      return EXIT_FAILURE;
   }
 
-  // Load imagej xml file
-   CameraArray e4pi(CameraArray::EYESIS4PI_CAMERA,simagejXmlFile.c_str());
+  // extract used calibration informations
+  /* Key/value-file descriptor */
+  lf_Descriptor_t lfDesc;
+
+  lf_Size_t lfWidth = 0;
+  lf_Size_t lfHeight = 0;
+  lf_Size_t lfChannels = 0;
+
+  lf_Real_t lfFocalLength = 0.0;
+  lf_Real_t lfPixelSize = 0.0;
+  lf_Real_t lfAzimuth = 0.0;
+  lf_Real_t lfHeading = 0.0;
+  lf_Real_t lfElevation = 0.0;
+  lf_Real_t lfRoll = 0.0;
+  lf_Real_t lfpx0 = 0.0;
+  lf_Real_t lfpy0 = 0.0;
+  lf_Real_t lfRadius = 0.0;
+  lf_Real_t lfCheight = 0.0;
+  lf_Real_t lfEntrance = 0.0;
+
+  /* Creation and verification of the descriptor */
+  std::string data("/data/");
+  char *c_data = new char[data.length() + 1];
+  std::strcpy(c_data, data.c_str());
+
+  char *c_mac = new char[smacAddress.length() + 1];
+  std::strcpy(c_mac, smacAddress.c_str());
+
+  if ( lf_parse( (unsigned char*)c_mac, (unsigned char*)c_data, & lfDesc ) == LF_TRUE ) {
+
+    /* Query number of camera channels */
+    lfChannels = lf_query_channels( & lfDesc );
+  }
+  else
+  {
+    std::cerr << " Could not read calibration data. " << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  // now extract calibration information related to each module
+  std::vector <lf_Size_t > vec_width;
+  std::vector <lf_Size_t > vec_height;
+  std::vector <lf_Real_t > vec_focal;
+  std::vector <lf_Real_t > vec_px0;
+  std::vector <lf_Real_t > vec_py0;
+  std::vector <vector <double> > vec_rotations;
+  std::vector <vector <double> > vec_offsets;
+
+  for( lf_Size_t sensor_index = 0 ; sensor_index < lfChannels ; ++sensor_index )
+  {
+    /* Query number width and height of sensor image */
+    lfWidth = lf_query_pixelCorrectionWidth ( sensor_index, & lfDesc );
+    lfHeight = lf_query_pixelCorrectionHeight( sensor_index, & lfDesc );
+
+    vec_width.push_back ( lfWidth );
+    vec_height.push_back( lfHeight );
+
+    /* Query focal length of camera sensor index */
+    lfFocalLength = lf_query_focalLength( sensor_index , & lfDesc );
+    lfPixelSize = lf_query_pixelSize ( sensor_index , & lfDesc );
+
+    vec_focal.push_back( lfFocalLength / lfPixelSize );
+
+    /* Query angles used for gnomonic rotation */
+    lfAzimuth = lf_query_azimuth ( sensor_index , & lfDesc );
+    lfHeading = lf_query_heading ( sensor_index , & lfDesc );
+    lfElevation = lf_query_elevation ( sensor_index , & lfDesc );
+    lfRoll = lf_query_roll ( sensor_index , & lfDesc );
+
+    // compute rotation and store it.
+    double R[9] = {0};
+    computeRotationEl ( &R[0] , lfAzimuth , lfHeading, lfElevation, lfRoll);
+    vector <double > temp;
+
+    for(int i(0); i <9 ; ++i)
+      temp.push_back(R[i]);
+
+    vec_rotations.push_back(temp);
+
+    /* Query principal point */
+    lfpx0 = lf_query_px0 ( sensor_index , & lfDesc );
+    lfpy0 = lf_query_py0 ( sensor_index , & lfDesc );
+
+    vec_px0.push_back(lfpx0);
+    vec_py0.push_back(lfpy0);
+
+    /* Query information related to entrance pupil center */
+    lfRadius = lf_query_radius ( sensor_index , & lfDesc );
+    lfCheight = lf_query_height ( sensor_index , & lfDesc );
+    lfEntrance = lf_query_entrancePupilForward ( sensor_index , & lfDesc );
+
+    // compute optical center in camera coordinate and store it
+    double C[3] = {0,0,0};
+    getOpticalCenter ( &C[0] , lfRadius, lfCheight, lfAzimuth, R, lfEntrance );
+
+    vector<double> Cp;
+    Cp.push_back(C[0]);  Cp.push_back(C[1]); Cp.push_back(C[2]);
+    vec_offsets.push_back(Cp);
+  }
+
+  /* Release descriptor */
+  lf_release( & lfDesc );
 
   // load image filename
   std::vector<std::string> vec_image = stlplus::folder_files( sImageDir );
@@ -187,20 +285,18 @@ int main(int argc, char **argv)
       if (GetFormat(sImageFilename.c_str()) == Unknown)
         continue; // image cannot be opened
 
-      // retrieve width and height of image using opencv
-      IplImage* img = cvLoadImage(sImageFilename.c_str(), CV_LOAD_IMAGE_COLOR );
+       // extract channel information from image name
+      std::vector<string> splitted_name;
+
+      split( *iter_image, "-", splitted_name );
+      int sensor_index=atoi(splitted_name[1].c_str());
 
       // extract image width and height
-      const unsigned int width  = img->width;
-      const unsigned int height = img->height;
+      const unsigned int width  = vec_width[sensor_index];
+      const unsigned int height = vec_height[sensor_index];
 
       // now load image information and keep channel index and timestamp
-      struct utils::imagefile_info *info=utils::imagefile_parsename(sImageFilename.c_str());
-      unsigned int channel_index=atoi(info->channel);
-      std::string timestamp=info->timestamp;
-
-      Channel *channel=e4pi.channel(channel_index);
-      SensorData *sensor=channel->sensor;
+      std::string timestamp=splitted_name[0];
 
       // check if channel is kept
       bool  bKeepChannel(false);
@@ -212,14 +308,10 @@ int main(int argc, char **argv)
       {
         for(unsigned int i(0) ; i < keptChan.size() ; ++i )
         {
-          if( channel_index == keptChan[i] )
+          if( sensor_index == keptChan[i] )
               bKeepChannel = true;
         }
       }
-
-      // compute optical center and rotation
-      channel->getLensCenterVector();
-      channel->getRotation();
 
       // create output
       std::vector <double> intrinsic;
@@ -259,21 +351,21 @@ int main(int argc, char **argv)
               }
               else
               {
-                  intrinsic.push_back(focalPixPermm); intrinsic.push_back(0.0);           intrinsic.push_back(sensor->px0);
-                  intrinsic.push_back(0.0);           intrinsic.push_back(focalPixPermm); intrinsic.push_back(sensor->py0);
+                  intrinsic.push_back(focalPixPermm); intrinsic.push_back(0.0);           intrinsic.push_back(vec_px0[sensor_index]);
+                  intrinsic.push_back(0.0);           intrinsic.push_back(focalPixPermm); intrinsic.push_back(vec_py0[sensor_index]);
                   intrinsic.push_back(0.0);           intrinsic.push_back(0.0);           intrinsic.push_back(1.0);
               }
           }
-          // Create list if imagej-elphel file is given
+          // Create list if full calibration data are used
           else
           {
-              const double  focalPixPermm = sensor->focalLength / (0.001 * sensor->pixelSize);
+              const double  focalPixPermm = vec_focal[sensor_index];
 
-              intrinsic.push_back(sensor->pixelCorrectionWidth);
-              intrinsic.push_back(sensor->pixelCorrectionHeight);
+              intrinsic.push_back(width);
+              intrinsic.push_back(height);
 
-              intrinsic.push_back(focalPixPermm); intrinsic.push_back(0.0);           intrinsic.push_back(sensor->px0);
-              intrinsic.push_back(0.0);           intrinsic.push_back(focalPixPermm); intrinsic.push_back(sensor->py0);
+              intrinsic.push_back(focalPixPermm); intrinsic.push_back(0.0);           intrinsic.push_back(vec_px0[sensor_index]);
+              intrinsic.push_back(0.0);           intrinsic.push_back(focalPixPermm); intrinsic.push_back(vec_py0[sensor_index]);
               intrinsic.push_back(0.0);           intrinsic.push_back(0.0);           intrinsic.push_back(1.0);
           }
 
@@ -284,26 +376,25 @@ int main(int argc, char **argv)
               intrinsic.push_back(rig_index);
 
               // export channel
-              intrinsic.push_back(channel_index);
+              intrinsic.push_back(sensor_index);
 
               // export rotation
-              intrinsic.push_back(channel->R[0]); intrinsic.push_back(channel->R[1]); intrinsic.push_back(channel->R[2]);
-              intrinsic.push_back(channel->R[3]); intrinsic.push_back(channel->R[4]); intrinsic.push_back(channel->R[5]);
-              intrinsic.push_back(channel->R[6]); intrinsic.push_back(channel->R[7]); intrinsic.push_back(channel->R[8]);
+              vector<double> R = vec_rotations[sensor_index];
+              intrinsic.push_back(R[0]); intrinsic.push_back(R[1]); intrinsic.push_back(R[2]);
+              intrinsic.push_back(R[3]); intrinsic.push_back(R[4]); intrinsic.push_back(R[5]);
+              intrinsic.push_back(R[6]); intrinsic.push_back(R[7]); intrinsic.push_back(R[8]);
 
               // export translation
-              intrinsic.push_back(channel->lensCenterVector[0] / 1000.0);
-              intrinsic.push_back(channel->lensCenterVector[1] / 1000.0);
-              intrinsic.push_back(channel->lensCenterVector[2] / 1000.0);
+              vector<double> C = vec_offsets[sensor_index];
+              intrinsic.push_back( C[0] );
+              intrinsic.push_back( C[1] );
+              intrinsic.push_back( C[2] );
           };
 
           //export info
           #pragma omp critical
           camAndIntrinsics.insert(std::make_pair(*iter_image, intrinsic));
         };
-
-      //free memory
-      cvReleaseImage(&img);
 
       //update progress bar
       #pragma omp critical
@@ -349,5 +440,80 @@ int main(int argc, char **argv)
 
   listTXT.close();
   return EXIT_SUCCESS;
+
+}
+
+/**
+*  Given 4 angles, compute Elphel rotation
+*/
+ void computeRotationEl ( double * R , double az , double head, double ele , double roll)
+ {
+    //z-axis rotation
+    double Rz[3][3] = {
+       { cos(roll),-sin(roll), 0.0},
+       {-sin(roll),-cos(roll), 0.0},
+       {       0.0,      0.0, 1.0} };
+
+    // x-axis rotation
+    double Rx[3][3] = {
+       {1.0,      0.0,     0.0},
+       {0.0, cos(ele),sin(ele)},
+       {0.0,-sin(ele),cos(ele)} };
+
+    // y axis rotation
+    double Ry[3][3] = {
+       { cos(head+az), 0.0, sin(head+az)},
+       {          0.0,-1.0,          0.0},
+       {-sin(head+az), 0.0, cos(head+az)} };
+
+    // 3) R = R2*R1*R0 transform sensor coordinate to panorama coordinate
+    double RxRz[3][3] = {0.0};
+    double   RT[3][3] = {0.0};
+
+    // compute product of rotations
+    int i=0, j=0;
+
+    for(i=0 ; i < 3 ; ++i)
+      for(j=0; j < 3 ; ++j)
+         RxRz[i][j] = Rx[i][0] * Rz[0][j] + Rx[i][1] * Rz[1][j] + Rx[i][2] * Rz[2][j];
+
+    for(i=0 ; i < 3 ; ++i)
+      for(j=0; j < 3 ; ++j)
+         RT[i][j] = Ry[i][0] * RxRz[0][j] + Ry[i][1] * RxRz[1][j] + Ry[i][2] * RxRz[2][j];
+
+    // transpose because we need the transformation panorama to sensor coordinate !
+    R[0] = RT[0][0];
+    R[1] = RT[1][0];
+    R[2] = RT[2][0];
+    R[3] = RT[0][1];
+    R[4] = RT[1][1];
+    R[5] = RT[2][1];
+    R[6] = RT[0][2];
+    R[7] = RT[1][2];
+    R[8] = RT[2][2];
+}
+
+/**
+*  Given three angles, entrance pupil forward, radius and height, compute optical center position.
+*/
+
+ void getOpticalCenter ( double * C ,
+                const double & radius,
+                const double & height,
+                const double & azimuth,
+                const double * R,
+                const double & entrancePupilForward )
+{
+  // compute lense Center from data
+  double lensCenter[3] = {0.0, 0.0, 0.0};
+
+  lensCenter[0] = radius * sin(azimuth);
+  lensCenter[1] = height ;
+  lensCenter[2] = radius * cos(azimuth);
+
+  // C = lensCenter + R.entrancePupilForward, where R is roation sensor to world.
+  C[0] =  lensCenter[0] + R[6] * entrancePupilForward;
+  C[1] = -lensCenter[1] + R[7] * entrancePupilForward;
+  C[2] =  lensCenter[2] + R[8] * entrancePupilForward;
 
 }

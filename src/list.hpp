@@ -40,33 +40,20 @@
 #define LIST_HPP_
 
 #include <iostream>
-#include <fstream>
-#include <sstream>
-#include <memory>
-#include <string>
-#include <vector>
 #include <iomanip>
+#include <fstream>
+#include <fastcal-all.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <vector>
+#include <stdlib.h>
 #include <string.h>
+#include <cstring>
+#include <set>
+#include <map>
 
 #include "third_party/cmdLine/cmdLine.h"
 #include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
-
-#include <elphelphg/cameraArray.hpp>
-#include <elphelphg/camera.hpp>
-#include <elphelphg/channel.hpp>
-#include <elphelphg/file.hpp>
-#include <elphelphg/xml.hpp>
-#include <elphelphg/eqrData.hpp>
-#include <elphelphg/sensorData.hpp>
-#include <elphelphg/utils.hpp>
-
-#include <opencv2/calib3d/calib3d.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv/cv.h>
-#include <opencv/highgui.h>
 
 using namespace std;
 
@@ -123,5 +110,46 @@ bool operator!=(const imageNameAndIntrinsic& i1, const imageNameAndIntrinsic& i2
 bool operator<(const imageNameAndIntrinsic& i1, const imageNameAndIntrinsic& i2) {
     return i1.first < i2.first;
 }
+
+/**
+* Split an input string with a delimiter and fill a string vector
+*/
+static bool split ( const std::string src, const std::string& delim, std::vector<std::string>& vec_value )
+{
+  bool bDelimiterExist = false;
+  if ( !delim.empty() )
+  {
+    vec_value.clear();
+    std::string::size_type start = 0;
+    std::string::size_type end = std::string::npos -1;
+
+    while ( end != std::string::npos )
+    {
+      end = src.find ( delim, start );
+      vec_value.push_back ( src.substr ( start, end - start ) );
+      start = end + delim.size();
+    }
+
+    if ( vec_value.size() >= 2 )
+      bDelimiterExist = true;
+  }
+  return bDelimiterExist;
+}
+
+/**
+*  Given three angles, compute Elphel rotation
+*/
+ void computeRotationEl ( double * R , double az , double head, double ele , double roll);
+
+/**
+*  Given three angles, entrance pupil forward, radius and height, compute optical center position.
+*/
+
+ void getOpticalCenter ( double * C ,
+                const double & radius,
+                const double & height,
+                const double & azimuth,
+                const double * R,
+                const double & entrancePupilForward );
 
 #endif /* LIST_HPP_ */
