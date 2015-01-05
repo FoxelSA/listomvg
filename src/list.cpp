@@ -206,7 +206,7 @@ int main(int argc, char **argv)
 
     // compute rotation and store it.
     double R[9] = {0};
-    computeRotationEl ( &R[0] , lfAzimuth , lfHeading, lfElevation, lfRoll);
+    computeRotationEl ( &R[0] , lfAzimuth + lfHeading, lfElevation, lfRoll);
     vector <double > temp;
 
     for(int i(0); i <9 ; ++i)
@@ -425,6 +425,7 @@ int main(int argc, char **argv)
 
         // create stream
         std::ostringstream os;
+        os.precision(20);
 
         os << iter->first ;
 
@@ -456,7 +457,7 @@ int main(int argc, char **argv)
 /**
 *  Given 4 angles, compute Elphel rotation
 */
- void computeRotationEl ( double * R , double az , double head, double ele , double roll)
+ void computeRotationEl ( double * R , double az , double ele , double roll)
  {
     //z-axis rotation
     double Rz[3][3] = {
@@ -472,9 +473,9 @@ int main(int argc, char **argv)
 
     // y axis rotation
     double Ry[3][3] = {
-       { cos(head+az), 0.0, sin(head+az)},
-       {          0.0,-1.0,          0.0},
-       {-sin(head+az), 0.0, cos(head+az)} };
+       { cos( az ),  0.0, sin( az )},
+       {       0.0, -1.0,       0.0},
+       {-sin( az ),  0.0, cos( az )} };
 
     // 3) R = R2*R1*R0 transform sensor coordinate to panorama coordinate
     double RxRz[3][3] = {0.0};

@@ -139,7 +139,7 @@ static bool split ( const std::string src, const std::string& delim, std::vector
 /**
 *  Given three angles, compute Elphel rotation
 */
- void computeRotationEl ( double * R , double az , double head, double ele , double roll);
+ void computeRotationEl ( double * R , double az , double ele , double roll);
 
 /**
 *  Given three angles, entrance pupil forward, radius and height, compute optical center position.
