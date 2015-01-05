@@ -299,7 +299,7 @@ int main(int argc, char **argv)
       std::vector<string> splitted_name;
 
       split( *iter_image, "-", splitted_name );
-      int sensor_index=atoi(splitted_name[1].c_str());
+      unsigned int sensor_index=atoi(splitted_name[1].c_str());
 
       // extract image width and height
       const unsigned int width  = vec_width[sensor_index];
@@ -316,7 +316,7 @@ int main(int argc, char **argv)
           bKeepChannel = true ;
       else
       {
-        for(unsigned int i(0) ; i < keptChan.size() ; ++i )
+        for( unsigned int i(0) ; i < keptChan.size() ; ++i )
         {
           if( sensor_index == keptChan[i] )
               bKeepChannel = true;
@@ -425,7 +425,7 @@ int main(int argc, char **argv)
 
         // create stream
         std::ostringstream os;
-        os.precision(20);
+        os.precision(24);
 
         os << iter->first ;
 
