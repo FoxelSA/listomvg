@@ -425,7 +425,7 @@ int main(int argc, char **argv)
 
         // create stream
         std::ostringstream os;
-        os.precision(24);
+        os.precision(6);
 
         os << iter->first ;
 
