@@ -1,7 +1,7 @@
 /*
  * listOMVG
  *
- * Copyright (c) 2013-2014 FOXEL SA - http://foxel.ch
+ * Copyright (c) 2014-2015 FOXEL SA - http://foxel.ch
  * Please read <http://foxel.ch/license> for more information.
  *
  *
@@ -51,6 +51,7 @@
 #include <cstring>
 #include <set>
 #include <map>
+#include <types.hpp>
 
 #include "third_party/cmdLine/cmdLine.h"
 #include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
@@ -111,9 +112,12 @@ bool operator<(const imageNameAndIntrinsic& i1, const imageNameAndIntrinsic& i2)
     return i1.first < i2.first;
 }
 
-/**
+/*******************************************************************************
 * Split an input string with a delimiter and fill a string vector
+*
+********************************************************************************
 */
+
 static bool split ( const std::string src, const std::string& delim, std::vector<std::string>& vec_value )
 {
   bool bDelimiterExist = false;
@@ -136,13 +140,17 @@ static bool split ( const std::string src, const std::string& delim, std::vector
   return bDelimiterExist;
 }
 
-/**
+/*******************************************************************************
 *  Given three angles, compute Elphel rotation
+*
+********************************************************************************
 */
  void computeRotationEl ( double * R , double az , double head, double ele , double roll);
 
-/**
+/*******************************************************************************
 *  Given three angles, entrance pupil forward, radius and height, compute optical center position.
+*
+********************************************************************************
 */
 
  void getOpticalCenter ( double * C ,
