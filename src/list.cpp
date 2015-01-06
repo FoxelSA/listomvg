@@ -1,7 +1,7 @@
 /*
  * listOMV
  *
- * Copyright (c) 2013-2014 FOXEL SA - http://foxel.ch
+ * Copyright (c) 2014-2015 FOXEL SA - http://foxel.ch
  * Please read <http://foxel.ch/license> for more information.
  *
  *
@@ -36,7 +36,11 @@
  */
 
 
-#include "list.hpp"
+#include <tools.hpp>
+#include <types.hpp>
+#include <set>
+#include <map>
+#include <stdlib.h>
 #include "progress.hpp"
 
 using namespace std;
@@ -51,9 +55,9 @@ int main(int argc, char **argv)
     sOutputDir = "",
     sMountPoint = "";
 
-  double focalPixPermm = -1.0;
-  bool   bRigidRig     = true;
-  bool   bUseCalibPrincipalPoint = false;
+  li_Real_t     focalPixPermm = -1.0;
+  bool          bRigidRig     = true;
+  bool          bUseCalibPrincipalPoint = false;
 
   cmd.add( make_option('i', sImageDir, "imageDirectory") );
   cmd.add( make_option('m', smacAddress, "macAddress") );
@@ -136,25 +140,9 @@ int main(int argc, char **argv)
      return EXIT_FAILURE;
   }
 
-  // extract used calibration informations
   /* Key/value-file descriptor */
   lf_Descriptor_t lfDesc;
-
-  lf_Size_t lfWidth = 0;
-  lf_Size_t lfHeight = 0;
-  lf_Size_t lfChannels = 0;
-
-  lf_Real_t lfFocalLength = 0.0;
-  lf_Real_t lfPixelSize = 0.0;
-  lf_Real_t lfAzimuth = 0.0;
-  lf_Real_t lfHeading = 0.0;
-  lf_Real_t lfElevation = 0.0;
-  lf_Real_t lfRoll = 0.0;
-  lf_Real_t lfpx0 = 0.0;
-  lf_Real_t lfpy0 = 0.0;
-  lf_Real_t lfRadius = 0.0;
-  lf_Real_t lfCheight = 0.0;
-  lf_Real_t lfEntrance = 0.0;
+  lf_Size_t       lfChannels=0;
 
   /* Creation and verification of the descriptor */
   char *c_data = new char[sMountPoint.length() + 1];
@@ -175,64 +163,42 @@ int main(int argc, char **argv)
   }
 
   // now extract calibration information related to each module
-  std::vector <lf_Size_t > vec_width;
-  std::vector <lf_Size_t > vec_height;
-  std::vector <lf_Real_t > vec_focal;
-  std::vector <lf_Real_t > vec_px0;
-  std::vector <lf_Real_t > vec_py0;
-  std::vector <vector <double> > vec_rotations;
-  std::vector <vector <double> > vec_offsets;
+  std::vector < sensorData > vec_sensorData;
 
-  for( lf_Size_t sensor_index = 0 ; sensor_index < lfChannels ; ++sensor_index )
+  for( li_Size_t sensor_index = 0 ; sensor_index < lfChannels ; ++sensor_index )
   {
-    /* Query number width and height of sensor image */
-    lfWidth = lf_query_pixelCorrectionWidth ( sensor_index, & lfDesc );
-    lfHeight = lf_query_pixelCorrectionHeight( sensor_index, & lfDesc );
+    sensorData  sD;
 
-    vec_width.push_back ( lfWidth );
-    vec_height.push_back( lfHeight );
+    /* Query number width and height of sensor image */
+    sD.lfWidth  = lf_query_pixelCorrectionWidth ( sensor_index, & lfDesc );
+    sD.lfHeight = lf_query_pixelCorrectionHeight( sensor_index, & lfDesc );
 
     /* Query focal length of camera sensor index */
-    lfFocalLength = lf_query_focalLength( sensor_index , & lfDesc );
-    lfPixelSize = lf_query_pixelSize ( sensor_index , & lfDesc );
-
-    vec_focal.push_back( lfFocalLength / lfPixelSize );
+    sD.lfFocalLength = lf_query_focalLength( sensor_index , & lfDesc );
+    sD.lfPixelSize   = lf_query_pixelSize  ( sensor_index , & lfDesc );
 
     /* Query angles used for gnomonic rotation */
-    lfAzimuth = lf_query_azimuth ( sensor_index , & lfDesc );
-    lfHeading = lf_query_heading ( sensor_index , & lfDesc );
-    lfElevation = lf_query_elevation ( sensor_index , & lfDesc );
-    lfRoll = lf_query_roll ( sensor_index , & lfDesc );
+    sD.lfAzimuth    = lf_query_azimuth    ( sensor_index , & lfDesc );
+    sD.lfHeading    = lf_query_heading    ( sensor_index , & lfDesc );
+    sD.lfElevation  = lf_query_elevation  ( sensor_index , & lfDesc );
+    sD.lfRoll       = lf_query_roll       ( sensor_index , & lfDesc );
 
     // compute rotation and store it.
-    double R[9] = {0};
-    computeRotationEl ( &R[0] , lfAzimuth + lfHeading, lfElevation, lfRoll);
-    vector <double > temp;
-
-    for(int i(0); i <9 ; ++i)
-      temp.push_back(R[i]);
-
-    vec_rotations.push_back(temp);
+    computeRotationEl ( &sD.R[0] , sD.lfAzimuth , sD.lfHeading, sD.lfElevation, sD.lfRoll );
 
     /* Query principal point */
-    lfpx0 = lf_query_px0 ( sensor_index , & lfDesc );
-    lfpy0 = lf_query_py0 ( sensor_index , & lfDesc );
-
-    vec_px0.push_back(lfpx0);
-    vec_py0.push_back(lfpy0);
+    sD.lfpx0 = lf_query_px0 ( sensor_index , & lfDesc );
+    sD.lfpy0 = lf_query_py0 ( sensor_index , & lfDesc );
 
     /* Query information related to entrance pupil center */
-    lfRadius = lf_query_radius ( sensor_index , & lfDesc );
-    lfCheight = lf_query_height ( sensor_index , & lfDesc );
-    lfEntrance = lf_query_entrancePupilForward ( sensor_index , & lfDesc );
+    sD.lfRadius   = lf_query_radius               ( sensor_index , & lfDesc );
+    sD.lfCheight  = lf_query_height               ( sensor_index , & lfDesc );
+    sD.lfEntrance = lf_query_entrancePupilForward ( sensor_index , & lfDesc );
 
     // compute optical center in camera coordinate and store it
-    double C[3] = {0,0,0};
-    getOpticalCenter ( &C[0] , lfRadius, lfCheight, lfAzimuth, R, lfEntrance );
+    getOpticalCenter ( &sD.C[0] , sD.lfRadius, sD.lfCheight, sD.lfAzimuth, sD.R, sD.lfEntrance );
 
-    vector<double> Cp;
-    Cp.push_back(C[0]);  Cp.push_back(C[1]); Cp.push_back(C[2]);
-    vec_offsets.push_back(Cp);
+    vec_sensorData.push_back(sD);
   }
 
   /* Release descriptor */
@@ -242,11 +208,11 @@ int main(int argc, char **argv)
   std::vector<std::string> vec_image = stlplus::folder_files( sImageDir );
 
   // load kept channel
-  std::vector< unsigned int > keptChan;
+  std::vector< li_Size_t > keptChan;
 
   if( !sChannelFile.empty() ){
     std::ifstream  inFile(sChannelFile.c_str());
-    unsigned int chan;
+    li_Size_t chan;
 
     if( inFile.is_open() )
     {
@@ -265,7 +231,7 @@ int main(int argc, char **argv)
   }
 
   //initialize rig map
-  std::map<std::string, unsigned int>  mapRigPerImage;
+  std::map<std::string, li_Size_t>  mapRigPerImage;
 
   // Write the new file
   std::ofstream listTXT( stlplus::create_filespec( sOutputDir,
@@ -282,7 +248,7 @@ int main(int argc, char **argv)
 
     // do a parallel loop to improve CPU TIME
     #pragma omp parallel for
-    for ( int idx = 0; idx < (int) vec_image.size(); ++idx)
+    for ( li_Size_t idx = 0; idx < (li_Size_t) vec_image.size(); ++idx)
     {
       //advance iterator
       std::vector<std::string>::const_iterator iter_image = vec_image.begin();
@@ -299,11 +265,11 @@ int main(int argc, char **argv)
       std::vector<string> splitted_name;
 
       split( *iter_image, "-", splitted_name );
-      unsigned int sensor_index=atoi(splitted_name[1].c_str());
+      li_Size_t sensor_index=atoi(splitted_name[1].c_str());
 
       // extract image width and height
-      const unsigned int width  = vec_width[sensor_index];
-      const unsigned int height = vec_height[sensor_index];
+      const li_Size_t width  = vec_sensorData[sensor_index].lfWidth;
+      const li_Size_t height = vec_sensorData[sensor_index].lfHeight;
 
       // now load image information and keep channel index and timestamp
       std::string timestamp=splitted_name[0];
@@ -316,7 +282,7 @@ int main(int argc, char **argv)
           bKeepChannel = true ;
       else
       {
-        for( unsigned int i(0) ; i < keptChan.size() ; ++i )
+        for(li_Size_t i(0) ; i < keptChan.size() ; ++i )
         {
           if( sensor_index == keptChan[i] )
               bKeepChannel = true;
@@ -324,20 +290,20 @@ int main(int argc, char **argv)
       }
 
       // create output
-      std::vector <double> intrinsic;
+      std::vector <li_Real_t> intrinsic;
 
       // export only kept channel
       if( bKeepChannel )
       {
 
           // identify to which rig belongs the camera
-          unsigned int  rig_index;
+          li_Size_t  rig_index;
 
           // insert timestamp in the map
-          std::pair<std::map< std::string, unsigned int>::iterator,bool> ret;
+          std::pair<std::map< std::string, li_Size_t>::iterator,bool> ret;
           #pragma omp critical
           {
-            ret = mapRigPerImage.insert ( std::pair<std::string, unsigned int>(timestamp, mapRigPerImage.size()) );
+            ret = mapRigPerImage.insert ( std::pair<std::string, li_Size_t>(timestamp, mapRigPerImage.size()) );
             if(ret.second == true )
             {
                 mapRigPerImage[timestamp] = mapRigPerImage.size()-1;
@@ -361,21 +327,21 @@ int main(int argc, char **argv)
               }
               else
               {
-                  intrinsic.push_back(focalPixPermm); intrinsic.push_back(0.0);           intrinsic.push_back(vec_px0[sensor_index]);
-                  intrinsic.push_back(0.0);           intrinsic.push_back(focalPixPermm); intrinsic.push_back(vec_py0[sensor_index]);
+                  intrinsic.push_back(focalPixPermm); intrinsic.push_back(0.0);           intrinsic.push_back(vec_sensorData[sensor_index].lfpx0);
+                  intrinsic.push_back(0.0);           intrinsic.push_back(focalPixPermm); intrinsic.push_back(vec_sensorData[sensor_index].lfpy0);
                   intrinsic.push_back(0.0);           intrinsic.push_back(0.0);           intrinsic.push_back(1.0);
               }
           }
           // Create list if full calibration data are used
           else
           {
-              const double  focalPixPermm = vec_focal[sensor_index];
+              const li_Real_t focalPixPermm = vec_sensorData[sensor_index].lfFocalLength / vec_sensorData[sensor_index].lfPixelSize ;
 
               intrinsic.push_back(width);
               intrinsic.push_back(height);
 
-              intrinsic.push_back(focalPixPermm); intrinsic.push_back(0.0);           intrinsic.push_back(vec_px0[sensor_index]);
-              intrinsic.push_back(0.0);           intrinsic.push_back(focalPixPermm); intrinsic.push_back(vec_py0[sensor_index]);
+              intrinsic.push_back(focalPixPermm); intrinsic.push_back(0.0);           intrinsic.push_back(vec_sensorData[sensor_index].lfpx0);
+              intrinsic.push_back(0.0);           intrinsic.push_back(focalPixPermm); intrinsic.push_back(vec_sensorData[sensor_index].lfpy0);
               intrinsic.push_back(0.0);           intrinsic.push_back(0.0);           intrinsic.push_back(1.0);
           }
 
@@ -389,16 +355,20 @@ int main(int argc, char **argv)
               intrinsic.push_back(sensor_index);
 
               // export rotation
-              vector<double> R = vec_rotations[sensor_index];
-              intrinsic.push_back(R[0]); intrinsic.push_back(R[1]); intrinsic.push_back(R[2]);
-              intrinsic.push_back(R[3]); intrinsic.push_back(R[4]); intrinsic.push_back(R[5]);
-              intrinsic.push_back(R[6]); intrinsic.push_back(R[7]); intrinsic.push_back(R[8]);
+              intrinsic.push_back(vec_sensorData[sensor_index].R[0]);
+              intrinsic.push_back(vec_sensorData[sensor_index].R[1]);
+              intrinsic.push_back(vec_sensorData[sensor_index].R[2]);
+              intrinsic.push_back(vec_sensorData[sensor_index].R[3]);
+              intrinsic.push_back(vec_sensorData[sensor_index].R[4]);
+              intrinsic.push_back(vec_sensorData[sensor_index].R[5]);
+              intrinsic.push_back(vec_sensorData[sensor_index].R[6]);
+              intrinsic.push_back(vec_sensorData[sensor_index].R[7]);
+              intrinsic.push_back(vec_sensorData[sensor_index].R[8]);
 
               // export translation
-              vector<double> C = vec_offsets[sensor_index];
-              intrinsic.push_back( C[0] );
-              intrinsic.push_back( C[1] );
-              intrinsic.push_back( C[2] );
+              intrinsic.push_back( vec_sensorData[sensor_index].C[0] );
+              intrinsic.push_back( vec_sensorData[sensor_index].C[1] );
+              intrinsic.push_back( vec_sensorData[sensor_index].C[2] );
           };
 
           //export info
@@ -417,7 +387,7 @@ int main(int argc, char **argv)
     std::cout, "\n Write list in file lists.txt :\n");
 
     // export list to file
-    for ( int img = 0; img < (int) camAndIntrinsics.size(); ++img)
+    for ( li_Size_t img = 0; img < (li_Size_t) camAndIntrinsics.size(); ++img)
     {
         //advance iterator
         std::set<imageNameAndIntrinsic>::const_iterator iter = camAndIntrinsics.begin();
@@ -430,10 +400,10 @@ int main(int argc, char **argv)
         os << iter->first ;
 
         // retreive intrinsic info
-        std::vector<double> intrinsic = iter->second;
+        std::vector<li_Real_t> intrinsic = iter->second;
 
         // export instrinsics
-        for(int j=0; j < (int) intrinsic.size() ; ++j )
+        for(li_Size_t j=0; j < (li_Size_t) intrinsic.size() ; ++j )
           os << ";"  << intrinsic[j];
 
         os << endl;
@@ -451,80 +421,5 @@ int main(int argc, char **argv)
 
   listTXT.close();
   return EXIT_SUCCESS;
-
-}
-
-/**
-*  Given 4 angles, compute Elphel rotation
-*/
- void computeRotationEl ( double * R , double az , double ele , double roll)
- {
-    //z-axis rotation
-    double Rz[3][3] = {
-       { cos(roll),-sin(roll), 0.0},
-       {-sin(roll),-cos(roll), 0.0},
-       {       0.0,      0.0, 1.0} };
-
-    // x-axis rotation
-    double Rx[3][3] = {
-       {1.0,      0.0,     0.0},
-       {0.0, cos(ele),sin(ele)},
-       {0.0,-sin(ele),cos(ele)} };
-
-    // y axis rotation
-    double Ry[3][3] = {
-       { cos( az ),  0.0, sin( az )},
-       {       0.0, -1.0,       0.0},
-       {-sin( az ),  0.0, cos( az )} };
-
-    // 3) R = R2*R1*R0 transform sensor coordinate to panorama coordinate
-    double RxRz[3][3] = {0.0};
-    double   RT[3][3] = {0.0};
-
-    // compute product of rotations
-    int i=0, j=0;
-
-    for(i=0 ; i < 3 ; ++i)
-      for(j=0; j < 3 ; ++j)
-         RxRz[i][j] = Rx[i][0] * Rz[0][j] + Rx[i][1] * Rz[1][j] + Rx[i][2] * Rz[2][j];
-
-    for(i=0 ; i < 3 ; ++i)
-      for(j=0; j < 3 ; ++j)
-         RT[i][j] = Ry[i][0] * RxRz[0][j] + Ry[i][1] * RxRz[1][j] + Ry[i][2] * RxRz[2][j];
-
-    // transpose because we need the transformation panorama to sensor coordinate !
-    R[0] = RT[0][0];
-    R[1] = RT[1][0];
-    R[2] = RT[2][0];
-    R[3] = RT[0][1];
-    R[4] = RT[1][1];
-    R[5] = RT[2][1];
-    R[6] = RT[0][2];
-    R[7] = RT[1][2];
-    R[8] = RT[2][2];
-}
-
-/**
-*  Given three angles, entrance pupil forward, radius and height, compute optical center position.
-*/
-
- void getOpticalCenter ( double * C ,
-                const double & radius,
-                const double & height,
-                const double & azimuth,
-                const double * R,
-                const double & entrancePupilForward )
-{
-  // compute lense Center from data
-  double lensCenter[3] = {0.0, 0.0, 0.0};
-
-  lensCenter[0] = radius * sin(azimuth);
-  lensCenter[1] = height ;
-  lensCenter[2] = radius * cos(azimuth);
-
-  // C = lensCenter + R.entrancePupilForward, where R is roation sensor to world.
-  C[0] =  lensCenter[0] + R[6] * entrancePupilForward;
-  C[1] = -lensCenter[1] + R[7] * entrancePupilForward;
-  C[2] =  lensCenter[2] + R[8] * entrancePupilForward;
 
 }
