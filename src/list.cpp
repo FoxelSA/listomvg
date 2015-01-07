@@ -249,6 +249,7 @@ int main(int argc, char **argv)
     // declare variable before loop
     std::vector<std::string>::const_iterator iter_image = vec_image.begin();
     std::pair< std::map<std::string, li_Size_t>::iterator, bool > ret;
+    std::map<std::string, std::vector<string> >  mapSubcamPerTimestamp;
     std::vector<string>     splitted_name;
     std::vector<li_Real_t>  intrinsic;
     std::string             timestamp;
@@ -264,8 +265,8 @@ int main(int argc, char **argv)
     bool      bKeepChannel  = false;
 
     // do a parallel loop to improve CPU TIME
-    #pragma omp parallel firstprivate(iter_image, splitted_name, intrinsic, timestamp, width, height, sensor_index, rig_index, i, bKeepChannel, sImageFilename)
-    #pragma omp for
+    #pragma omp parallel firstprivate(iter_image, splitted_name, intrinsic, timestamp, width, height, sensor_index, rig_index, i, bKeepChannel, sImageFilename, focalPix)
+    #pragma omp for schedule(dynamic)
     for ( idx = 0; idx < vec_image.size(); ++idx)
     {
       //advance iterator
@@ -318,6 +319,9 @@ int main(int argc, char **argv)
               {
                   mapRigPerImage[timestamp] = mapRigPerImage.size()-1;
               }
+
+              //insert image in map timestamp -> subcam
+              mapSubcamPerTimestamp[timestamp].push_back( *iter_image );
           }
 
           //extract rig_index
@@ -395,6 +399,59 @@ int main(int argc, char **argv)
       }
 
     }
+
+    // check the number of subcamera per rig. Remove less representated rigs.
+    li_Size_t   timeStamp = 0;
+    std::map < std::string, std::vector<string> >::const_iterator iter_timestamp = mapSubcamPerTimestamp.begin();
+    std::pair< std::map < li_Size_t , li_Size_t >::iterator, bool > insert_check;
+    std::map < li_Size_t , li_Size_t >  occurencePerSubcamNumber;
+
+    // compute occurrence of each subcamera number
+    for( timeStamp = 0 ; timeStamp < mapSubcamPerTimestamp.size(); ++timeStamp )
+    {
+        //advance iterator
+        iter_timestamp = mapSubcamPerTimestamp.begin();
+        std::advance(iter_timestamp, timeStamp);
+
+        //update map
+        insert_check = occurencePerSubcamNumber.insert (
+                            std::pair<li_Size_t, li_Size_t>( iter_timestamp->second.size(), occurencePerSubcamNumber.size()) );
+
+        if(insert_check.second == true )
+        {
+            occurencePerSubcamNumber[iter_timestamp->second.size() ] = 1 ;
+        }
+        else
+        {
+            occurencePerSubcamNumber[iter_timestamp->second.size() ] += 1 ;
+        }
+
+    }
+
+    // compute most representative number of subcamera
+    li_Size_t               k = 0;
+    li_Size_t   max_Occurence = 0;
+    li_Size_t   subCamNumber  = 0;
+
+    std::map < li_Size_t , li_Size_t >::const_iterator iter_occurrence = occurencePerSubcamNumber.begin();
+
+    for( k = 0 ; k < occurencePerSubcamNumber.size(); ++k )
+    {
+        //advance iterator
+        iter_occurrence = occurencePerSubcamNumber.begin();
+        std::advance(iter_occurrence, k);
+
+        //update map
+        if( iter_occurrence->second > max_Occurence )
+        {
+          max_Occurence = iter_occurrence->second;
+          subCamNumber  = iter_occurrence->first;
+        }
+
+    }
+
+    std::cout << " Max rig occurence is " << max_Occurence << ", rig number of sub cameras is " << subCamNumber << std::endl;
+    std::cout << " OpenMVG will use " << max_Occurence * subCamNumber << " of images on " << camAndIntrinsics.size();
 
     C_Progress_display my_progress_bar_export( camAndIntrinsics.size(),
     std::cout, "\n Write list in file lists.txt :\n");
