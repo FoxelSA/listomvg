@@ -246,43 +246,58 @@ int main(int argc, char **argv)
     C_Progress_display my_progress_bar_image( vec_image.size(),
     std::cout, "\n List computation progession:\n");
 
+    // declare variable before loop
+    std::vector<std::string>::const_iterator iter_image = vec_image.begin();
+    std::pair< std::map<std::string, li_Size_t>::iterator, bool > ret;
+    std::vector<string>     splitted_name;
+    std::vector<li_Real_t>  intrinsic;
+    std::string             timestamp;
+    std::string             sImageFilename;
+
+    li_Size_t width         = 0;
+    li_Size_t height        = 0;
+    li_Size_t sensor_index  = 0;
+    li_Size_t rig_index     = 0;
+    li_Size_t i             = 0;
+    li_Size_t idx           = 0;
+    li_Real_t focalPix      = 0;
+    bool      bKeepChannel  = false;
+
     // do a parallel loop to improve CPU TIME
-    #pragma omp parallel for
-    for ( li_Size_t idx = 0; idx < (li_Size_t) vec_image.size(); ++idx)
+    #pragma omp parallel firstprivate(iter_image, splitted_name, intrinsic, timestamp, width, height, sensor_index, rig_index, i, bKeepChannel, sImageFilename)
+    #pragma omp for
+    for ( idx = 0; idx < vec_image.size(); ++idx)
     {
       //advance iterator
-      std::vector<std::string>::const_iterator iter_image = vec_image.begin();
+      iter_image = vec_image.begin();
       std::advance(iter_image, idx);
 
       // Read meta data to fill width height and focalPixPermm
-      std::string sImageFilename = stlplus::create_filespec( sImageDir, *iter_image );
+      sImageFilename = stlplus::create_filespec( sImageDir, *iter_image );
 
       // Test if the image format is supported:
       if (GetFormat(sImageFilename.c_str()) == Unknown)
         continue; // image cannot be opened
 
-       // extract channel information from image name
-      std::vector<string> splitted_name;
+      // extract channel information from image name
+      splitted_name.clear();
 
       split( *iter_image, "-", splitted_name );
-      li_Size_t sensor_index=atoi(splitted_name[1].c_str());
+      sensor_index=atoi(splitted_name[1].c_str());
 
       // extract image width and height
-      const li_Size_t width  = vec_sensorData[sensor_index].lfWidth;
-      const li_Size_t height = vec_sensorData[sensor_index].lfHeight;
+      width  = vec_sensorData[sensor_index].lfWidth;
+      height = vec_sensorData[sensor_index].lfHeight;
 
       // now load image information and keep channel index and timestamp
-      std::string timestamp=splitted_name[0];
-
-      // check if channel is kept
-      bool  bKeepChannel(false);
+      timestamp=splitted_name[0];
 
       // if no channel file is given, keep all images
       if( keptChan.empty() )
           bKeepChannel = true ;
       else
       {
-        for(li_Size_t i(0) ; i < keptChan.size() ; ++i )
+        for( i = 0 ; i < keptChan.size() ; ++i )
         {
           if( sensor_index == keptChan[i] )
               bKeepChannel = true;
@@ -290,28 +305,23 @@ int main(int argc, char **argv)
       }
 
       // create output
-      std::vector <li_Real_t> intrinsic;
+      intrinsic.clear();
 
       // export only kept channel
       if( bKeepChannel )
       {
-
-          // identify to which rig belongs the camera
-          li_Size_t  rig_index;
-
-          // insert timestamp in the map
-          std::pair<std::map< std::string, li_Size_t>::iterator,bool> ret;
           #pragma omp critical
           {
-            ret = mapRigPerImage.insert ( std::pair<std::string, li_Size_t>(timestamp, mapRigPerImage.size()) );
-            if(ret.second == true )
-            {
-                mapRigPerImage[timestamp] = mapRigPerImage.size()-1;
-            }
+              // insert timestamp in the map
+              ret = mapRigPerImage.insert ( std::pair<std::string, li_Size_t>(timestamp, mapRigPerImage.size()) );
+              if(ret.second == true )
+              {
+                  mapRigPerImage[timestamp] = mapRigPerImage.size()-1;
+              }
           }
 
           //extract rig_index
-          rig_index = mapRigPerImage[timestamp];
+          rig_index = mapRigPerImage.at(timestamp);
 
           // Create list if focal is given
           if( focalPixPermm > 0.0 )
@@ -335,14 +345,14 @@ int main(int argc, char **argv)
           // Create list if full calibration data are used
           else
           {
-              const li_Real_t focalPixPermm = vec_sensorData[sensor_index].lfFocalLength / vec_sensorData[sensor_index].lfPixelSize ;
+              focalPix = vec_sensorData[sensor_index].lfFocalLength / vec_sensorData[sensor_index].lfPixelSize ;
 
               intrinsic.push_back(width);
               intrinsic.push_back(height);
 
-              intrinsic.push_back(focalPixPermm); intrinsic.push_back(0.0);           intrinsic.push_back(vec_sensorData[sensor_index].lfpx0);
-              intrinsic.push_back(0.0);           intrinsic.push_back(focalPixPermm); intrinsic.push_back(vec_sensorData[sensor_index].lfpy0);
-              intrinsic.push_back(0.0);           intrinsic.push_back(0.0);           intrinsic.push_back(1.0);
+              intrinsic.push_back(focalPix); intrinsic.push_back(0.0);      intrinsic.push_back(vec_sensorData[sensor_index].lfpx0);
+              intrinsic.push_back(0.0);      intrinsic.push_back(focalPix); intrinsic.push_back(vec_sensorData[sensor_index].lfpy0);
+              intrinsic.push_back(0.0);      intrinsic.push_back(0.0);      intrinsic.push_back(1.0);
           }
 
           // if rigid rig, add some informations
@@ -373,7 +383,9 @@ int main(int argc, char **argv)
 
           //export info
           #pragma omp critical
-          camAndIntrinsics.insert(std::make_pair(*iter_image, intrinsic));
+          {
+            camAndIntrinsics.insert(std::make_pair(*iter_image, intrinsic));
+          }
         };
 
       //update progress bar
@@ -381,16 +393,21 @@ int main(int argc, char **argv)
       {
         ++my_progress_bar_image;
       }
+
     }
 
     C_Progress_display my_progress_bar_export( camAndIntrinsics.size(),
     std::cout, "\n Write list in file lists.txt :\n");
 
     // export list to file
-    for ( li_Size_t img = 0; img < (li_Size_t) camAndIntrinsics.size(); ++img)
+    li_Size_t   img       = 0;
+    li_Size_t   j         = 0;
+    std::set<imageNameAndIntrinsic>::const_iterator   iter        = camAndIntrinsics.begin();
+
+    for ( img = 0; img < (li_Size_t) camAndIntrinsics.size(); ++img)
     {
         //advance iterator
-        std::set<imageNameAndIntrinsic>::const_iterator iter = camAndIntrinsics.begin();
+        iter = camAndIntrinsics.begin();
         std::advance(iter, img);
 
         // create stream
@@ -400,11 +417,11 @@ int main(int argc, char **argv)
         os << iter->first ;
 
         // retreive intrinsic info
-        std::vector<li_Real_t> intrinsic = iter->second;
+        intrinsic = iter->second;
 
         // export instrinsics
-        for(li_Size_t j=0; j < (li_Size_t) intrinsic.size() ; ++j )
-          os << ";"  << intrinsic[j];
+        for( j = 0; j < (li_Size_t) intrinsic.size() ; ++j )
+            os << ";"  << intrinsic[j];
 
         os << endl;
 
@@ -412,7 +429,6 @@ int main(int argc, char **argv)
 
         ++my_progress_bar_export;
     }
-
   }
   else
   {
