@@ -450,8 +450,26 @@ int main(int argc, char **argv)
 
     }
 
-    std::cout << " Max rig occurence is " << max_Occurence << ", rig number of sub cameras is " << subCamNumber << std::endl;
-    std::cout << " OpenMVG will use " << max_Occurence * subCamNumber << " of images on " << camAndIntrinsics.size();
+    // remove rig not having the max occurrence subcam number
+    std::set < std::string >  imageToRemove;
+    for( k = 0 ; k < mapSubcamPerTimestamp.size(); ++k )
+    {
+        //advance iterator
+        iter_timestamp = mapSubcamPerTimestamp.begin();
+        std::advance(iter_timestamp, k);
+
+        //update map
+        if( iter_timestamp->second.size() != subCamNumber )
+        {
+          for( i  = 0 ; i < iter_timestamp->second.size() ; ++i )
+          {
+            imageToRemove.insert( iter_timestamp->second[i] );
+          }
+        }
+    }
+
+    std::cout << "\n\n Max rig occurence is " << max_Occurence << ", rig number of sub cameras is " << subCamNumber << std::endl << std::endl;
+    std::cout << " OpenMVG will use " << max_Occurence * subCamNumber << " of " << camAndIntrinsics.size() << " input images " << std::endl << std::endl;
 
     C_Progress_display my_progress_bar_export( camAndIntrinsics.size(),
     std::cout, "\n Write list in file lists.txt :\n");
@@ -459,7 +477,8 @@ int main(int argc, char **argv)
     // export list to file
     li_Size_t   img       = 0;
     li_Size_t   j         = 0;
-    std::set<imageNameAndIntrinsic>::const_iterator   iter        = camAndIntrinsics.begin();
+    std::set<imageNameAndIntrinsic>::const_iterator   iter = camAndIntrinsics.begin();
+    std::set<std::string>::iterator  it = imageToRemove.end();
 
     for ( img = 0; img < (li_Size_t) camAndIntrinsics.size(); ++img)
     {
@@ -471,18 +490,23 @@ int main(int argc, char **argv)
         std::ostringstream os;
         os.precision(6);
 
-        os << iter->first ;
+        // check if we have to keep this timestamp
+        it=imageToRemove.find(iter->first);
+        if ( it == imageToRemove.end() )
+        {
+            os << iter->first ;
 
-        // retreive intrinsic info
-        intrinsic = iter->second;
+            // retreive intrinsic info
+            intrinsic = iter->second;
 
-        // export instrinsics
-        for( j = 0; j < (li_Size_t) intrinsic.size() ; ++j )
-            os << ";"  << intrinsic[j];
+            // export instrinsics
+            for( j = 0; j < (li_Size_t) intrinsic.size() ; ++j )
+                os << ";"  << intrinsic[j];
 
-        os << endl;
+            os << endl;
 
-        listTXT << os.str();
+            listTXT << os.str();
+        }
 
         ++my_progress_bar_export;
     }
