@@ -294,6 +294,8 @@ int main(int argc, char **argv)
       timestamp=splitted_name[0];
 
       // if no channel file is given, keep all images
+      bKeepChannel = false;
+
       if( keptChan.empty() )
           bKeepChannel = true ;
       else
