@@ -324,10 +324,10 @@ int main(int argc, char **argv)
 
               //insert image in map timestamp -> subcam
               mapSubcamPerTimestamp[timestamp].push_back( *iter_image );
-          }
 
-          //extract rig_index
-          rig_index = mapRigPerImage.at(timestamp);
+              //extract rig_index
+              rig_index = mapRigPerImage.at(timestamp);
+          }
 
           // Create list if focal is given
           if( focalPixPermm > 0.0 )
