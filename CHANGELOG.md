@@ -1,3 +1,7 @@
+## 1.1.1 (January 23, 2015)
+- `FIXED`: Crash when parallel mode is activated
+- `FIXED`: updated submodule libfastcal to latest version
+
 ## 1.1 (January 22, 2015)
 - `FIXED`: Rig integrity check
 - `FIXED`: code cleaning
