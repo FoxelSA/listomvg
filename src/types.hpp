@@ -72,10 +72,39 @@ struct sensorData
     lf_Real_t   lfCheight     = 0.0;
     lf_Real_t   lfEntrance    = 0.0;
 
-    li_Real_t R[9] = {0};
-    li_Real_t C[3] = {0};
+    li_Real_t R[9] = {
+        1.0, 0.0, 0.0,
+        0.0, 1.0, 0.0,
+        0.0, 0.0, 1.0};
+
+    li_Real_t C[3] = {0,0,0};
  };
 
+ /******************************************************************************
+ * camera information
+ *****************************************************************************/
+ struct camInformation
+{
+  std::string sRigName    = "";
+
+  li_Size_t   width     = 0;
+  li_Size_t   height    = 0;
+  li_Size_t   subChan   = 0;
+
+  li_Real_t   focal       = 0.0;
+  li_Real_t   px0         = 0.0;
+  li_Real_t   py0         = 0.0;
+
+  li_Real_t R[9] = {
+    1.0, 0.0, 0.0,
+    0.0, 1.0, 0.0,
+    0.0, 0.0, 1.0};
+
+  li_Real_t C[3] = {0,0,0};
+};
+
+/// The structure used to store intrinsic per image
+typedef std::pair<std::string, camInformation > imageNameAndIntrinsic;
 
  // supported image format
 
@@ -84,9 +113,6 @@ struct sensorData
  };
 
  Format GetFormat(const char *c);
-
- /// The structure used to store intrinsic per image
- typedef std::pair<std::string, std::vector<double> > imageNameAndIntrinsic;
 
 // lexicographical format used
  static bool CmpFormatExt(const char *a, const char *b) {

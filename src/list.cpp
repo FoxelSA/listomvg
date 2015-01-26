@@ -251,7 +251,6 @@ int main(int argc, char **argv)
     std::pair< std::map<std::string, li_Size_t>::iterator, bool > ret;
     std::map<std::string, std::vector<string> >  mapSubcamPerTimestamp;
     std::vector<string>     splitted_name;
-    std::vector<li_Real_t>  intrinsic;
     std::string             timestamp;
     std::string             sImageFilename;
 
@@ -265,7 +264,7 @@ int main(int argc, char **argv)
     bool      bKeepChannel  = false;
 
     // do a parallel loop to improve CPU TIME
-    #pragma omp parallel firstprivate(iter_image, splitted_name, intrinsic, timestamp, width, height, sensor_index, rig_index, i, bKeepChannel, sImageFilename, focalPix)
+    #pragma omp parallel firstprivate(iter_image, splitted_name, timestamp, width, height, sensor_index, rig_index, i, bKeepChannel, sImageFilename, focalPix)
     #pragma omp for schedule(dynamic)
     for ( idx = 0; idx < vec_image.size(); ++idx)
     {
@@ -307,8 +306,8 @@ int main(int argc, char **argv)
         }
       }
 
-      // create output
-      intrinsic.clear();
+      // export camera infor
+      camInformation   camInfo;
 
       // export only kept channel
       if( bKeepChannel )
@@ -329,23 +328,25 @@ int main(int argc, char **argv)
               rig_index = mapRigPerImage.at(timestamp);
           }
 
+          // affect width and height
+          camInfo.width = width;
+          camInfo.height = height;
+
           // Create list if focal is given
           if( focalPixPermm > 0.0 )
           {
-               intrinsic.push_back(width);
-               intrinsic.push_back(height);
+              camInfo.focal = focalPixPermm ;
 
               if(!bUseCalibPrincipalPoint)
               {
-                  intrinsic.push_back(focalPixPermm); intrinsic.push_back(0.0);           intrinsic.push_back(width /2.0);
-                  intrinsic.push_back(0.0);           intrinsic.push_back(focalPixPermm); intrinsic.push_back(height/2.0);
-                  intrinsic.push_back(0.0);           intrinsic.push_back(0.0);           intrinsic.push_back(1.0);
+
+                  camInfo.px0   = width / 2.0 ;
+                  camInfo.py0   = height / 2.0 ;
               }
               else
               {
-                  intrinsic.push_back(focalPixPermm); intrinsic.push_back(0.0);           intrinsic.push_back(vec_sensorData[sensor_index].lfpx0);
-                  intrinsic.push_back(0.0);           intrinsic.push_back(focalPixPermm); intrinsic.push_back(vec_sensorData[sensor_index].lfpy0);
-                  intrinsic.push_back(0.0);           intrinsic.push_back(0.0);           intrinsic.push_back(1.0);
+                  camInfo.px0   = vec_sensorData[sensor_index].lfpx0;
+                  camInfo.py0   = vec_sensorData[sensor_index].lfpy0;
               }
           }
           // Create list if full calibration data are used
@@ -353,44 +354,41 @@ int main(int argc, char **argv)
           {
               focalPix = vec_sensorData[sensor_index].lfFocalLength / vec_sensorData[sensor_index].lfPixelSize ;
 
-              intrinsic.push_back(width);
-              intrinsic.push_back(height);
-
-              intrinsic.push_back(focalPix); intrinsic.push_back(0.0);      intrinsic.push_back(vec_sensorData[sensor_index].lfpx0);
-              intrinsic.push_back(0.0);      intrinsic.push_back(focalPix); intrinsic.push_back(vec_sensorData[sensor_index].lfpy0);
-              intrinsic.push_back(0.0);      intrinsic.push_back(0.0);      intrinsic.push_back(1.0);
+              camInfo.focal = focalPix;
+              camInfo.px0   = vec_sensorData[sensor_index].lfpx0;
+              camInfo.py0   = vec_sensorData[sensor_index].lfpy0;
           }
 
           // if rigid rig, add some informations
           if(bRigidRig)
           {
               // export rig index
-              intrinsic.push_back(rig_index);
+              camInfo.sRigName = timestamp;
 
               // export channel
-              intrinsic.push_back(sensor_index);
+              camInfo.subChan = sensor_index;
 
               // export rotation
-              intrinsic.push_back(vec_sensorData[sensor_index].R[0]);
-              intrinsic.push_back(vec_sensorData[sensor_index].R[1]);
-              intrinsic.push_back(vec_sensorData[sensor_index].R[2]);
-              intrinsic.push_back(vec_sensorData[sensor_index].R[3]);
-              intrinsic.push_back(vec_sensorData[sensor_index].R[4]);
-              intrinsic.push_back(vec_sensorData[sensor_index].R[5]);
-              intrinsic.push_back(vec_sensorData[sensor_index].R[6]);
-              intrinsic.push_back(vec_sensorData[sensor_index].R[7]);
-              intrinsic.push_back(vec_sensorData[sensor_index].R[8]);
+              camInfo.R[0] = vec_sensorData[sensor_index].R[0] ;
+              camInfo.R[1] = vec_sensorData[sensor_index].R[1] ;
+              camInfo.R[2] = vec_sensorData[sensor_index].R[2] ;
+              camInfo.R[3] = vec_sensorData[sensor_index].R[3] ;
+              camInfo.R[4] = vec_sensorData[sensor_index].R[4] ;
+              camInfo.R[5] = vec_sensorData[sensor_index].R[5] ;
+              camInfo.R[6] = vec_sensorData[sensor_index].R[6] ;
+              camInfo.R[7] = vec_sensorData[sensor_index].R[7] ;
+              camInfo.R[8] = vec_sensorData[sensor_index].R[8] ;
 
               // export translation
-              intrinsic.push_back( vec_sensorData[sensor_index].C[0] );
-              intrinsic.push_back( vec_sensorData[sensor_index].C[1] );
-              intrinsic.push_back( vec_sensorData[sensor_index].C[2] );
+              camInfo.C[0] = vec_sensorData[sensor_index].C[0] ;
+              camInfo.C[1] = vec_sensorData[sensor_index].C[1] ;
+              camInfo.C[2] = vec_sensorData[sensor_index].C[2] ;
           };
 
           //export info
           #pragma omp critical
           {
-            camAndIntrinsics.insert(std::make_pair(*iter_image, intrinsic));
+            camAndIntrinsics.insert(std::make_pair(*iter_image, camInfo));
           }
         };
 
@@ -478,7 +476,6 @@ int main(int argc, char **argv)
 
     // export list to file
     li_Size_t   img       = 0;
-    li_Size_t   j         = 0;
     std::set<imageNameAndIntrinsic>::const_iterator   iter = camAndIntrinsics.begin();
     std::set<std::string>::iterator  it = imageToRemove.end();
 
@@ -499,11 +496,11 @@ int main(int argc, char **argv)
             os << iter->first ;
 
             // retreive intrinsic info
-            intrinsic = iter->second;
+            camInformation intrinsic = iter->second;
 
             // export instrinsics
-            for( j = 0; j < (li_Size_t) intrinsic.size() ; ++j )
-                os << ";"  << intrinsic[j];
+            os << ";"  << intrinsic.width;
+            os << ";"  << intrinsic.height;
 
             os << endl;
 
