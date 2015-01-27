@@ -257,14 +257,13 @@ int main(int argc, char **argv)
     li_Size_t width         = 0;
     li_Size_t height        = 0;
     li_Size_t sensor_index  = 0;
-    li_Size_t rig_index     = 0;
     li_Size_t i             = 0;
     li_Size_t idx           = 0;
     li_Real_t focalPix      = 0;
     bool      bKeepChannel  = false;
 
     // do a parallel loop to improve CPU TIME
-    #pragma omp parallel firstprivate(iter_image, splitted_name, timestamp, width, height, sensor_index, rig_index, i, bKeepChannel, sImageFilename, focalPix)
+    #pragma omp parallel firstprivate(iter_image, splitted_name, timestamp, width, height, sensor_index, i, bKeepChannel, sImageFilename, focalPix)
     #pragma omp for schedule(dynamic)
     for ( idx = 0; idx < vec_image.size(); ++idx)
     {
@@ -323,9 +322,6 @@ int main(int argc, char **argv)
 
               //insert image in map timestamp -> subcam
               mapSubcamPerTimestamp[timestamp].push_back( *iter_image );
-
-              //extract rig_index
-              rig_index = mapRigPerImage.at(timestamp);
           }
 
           // affect width and height
@@ -501,6 +497,40 @@ int main(int argc, char **argv)
             // export instrinsics
             os << ";"  << intrinsic.width;
             os << ";"  << intrinsic.height;
+
+            // export camera matrix
+            os << ";"  << intrinsic.focal;
+            os << ";"  << 0;
+            os << ";"  << intrinsic.px0;
+            os << ";"  << 0;
+            os << ";"  << intrinsic.focal;
+            os << ";"  << intrinsic.py0;
+            os << ";"  << 0;
+            os << ";"  << 0;
+            os << ";"  << 1;
+
+            if(bRigidRig)
+            {
+                // export rig Id and subchannel
+                os << ";" << intrinsic.sRigName;
+                os << ";" << intrinsic.subChan;
+
+                // export rotation matrix
+                os << ";"  << intrinsic.R[0];
+                os << ";"  << intrinsic.R[1];
+                os << ";"  << intrinsic.R[2];
+                os << ";"  << intrinsic.R[3];
+                os << ";"  << intrinsic.R[4];
+                os << ";"  << intrinsic.R[5];
+                os << ";"  << intrinsic.R[6];
+                os << ";"  << intrinsic.R[7];
+                os << ";"  << intrinsic.R[8];
+
+                // export camera center
+                os << ";"  << intrinsic.C[0];
+                os << ";"  << intrinsic.C[1];
+                os << ";"  << intrinsic.C[2];
+            }
 
             os << endl;
 
