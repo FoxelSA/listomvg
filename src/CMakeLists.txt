@@ -23,7 +23,7 @@
  # GNU Affero General Public License for more details.
  #
  # You should have received a copy of the GNU Affero General Public License
- # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ # along with this program.  if not, see <http://www.gnu.org/licenses/>.
  #
  #
  # Additional Terms:
@@ -42,7 +42,7 @@ cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 project(listomvg C CXX)
 
 # ==============================================================================
-# listomvg build options
+#  C / C++ flags
 # ==============================================================================
 set(CMAKE_CXX_COMPILER g++)
 set(CMAKE_BUILD_TYPE Debug)
@@ -63,15 +63,27 @@ endif()
 set(LISTOMVG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 # ==============================================================================
+# add a target to generate API documentation with Doxygen
+# ===============================================================================
+find_package(Doxygen)
+if(DOXYGEN_FOUND)
+  add_custom_target(doc
+        ${DOXYGEN_EXECUTABLE} ${LISTOMVG_SOURCE_DIR}/Doxyfile
+        WORKING_DIRECTORY ..
+        COMMENT "Generating API documentation with Doxygen" VERBATIM
+  )
+endif(DOXYGEN_FOUND)
+
+# ==============================================================================
 # OpenMP detection
 # ==============================================================================
-FIND_PACKAGE(OpenMP)
-IF (OPENMP_FOUND)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-  IF (NOT MSVC)
+find_package(OpenMP)
+if (OPENMP_FOUND)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  if (NOT MSVC)
     LIST(APPEND LISTOMVG_LIBRARY_DEPENDENCIES gomp)
-  ENDIF (NOT MSVC)
-ENDIF (OPENMP_FOUND)
+  endif (NOT MSVC)
+endif (OPENMP_FOUND)
 
 
 # ==============================================================================
@@ -107,11 +119,6 @@ add_custom_target(
 )
 
 set(LIBSTL_LIBS ${LISTOMVG_SOURCE_DIR}/third_party/stlplus3/libstlplus.a)
-
-# ==============================================================================
-# Third-party libraries:
-# ==============================================================================
-#ADD_SUBDIRECTORY(third_party)
 
 # ==============================================================================
 # Include directories
