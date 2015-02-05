@@ -101,24 +101,24 @@ find_package(OpenCV REQUIRED)
 # ------------------------------------------------------------------------------
 add_custom_target(
   fastcal
-  WORKING_DIRECTORY ${LISTOMVG_SOURCE_DIR}/third_party/libfastcal
+  WORKING_DIRECTORY ${LISTOMVG_SOURCE_DIR}/../lib/libfastcal
   COMMAND make
 )
 
-set(LIBFASTCAL_INCLUDE_DIR ${LISTOMVG_SOURCE_DIR}/third_party/libfastcal/src)
-set(LIBFASTCAL_LIBS ${LISTOMVG_SOURCE_DIR}/third_party/libfastcal/bin/libfastcal.a)
+set(LIBFASTCAL_INCLUDE_DIR ${LISTOMVG_SOURCE_DIR}/../lib/libfastcal/src)
+set(LIBFASTCAL_LIBS ${LISTOMVG_SOURCE_DIR}/../lib/libfastcal/bin/libfastcal.a)
 
 # ------------------------------------------------------------------------------
 # stlplus
 # ------------------------------------------------------------------------------
 add_custom_target(
   stlplus
-  WORKING_DIRECTORY ${LISTOMVG_SOURCE_DIR}/third_party/stlplus3/
+  WORKING_DIRECTORY ${LISTOMVG_SOURCE_DIR}/../lib/stlplus3/
   COMMAND cmake .
   COMMAND make
 )
 
-set(LIBSTL_LIBS ${LISTOMVG_SOURCE_DIR}/third_party/stlplus3/libstlplus.a)
+set(LIBSTL_LIBS ${LISTOMVG_SOURCE_DIR}/../lib/stlplus3/libstlplus.a)
 
 # ==============================================================================
 # Include directories
@@ -126,9 +126,9 @@ set(LIBSTL_LIBS ${LISTOMVG_SOURCE_DIR}/third_party/stlplus3/libstlplus.a)
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${LIBFASTCAL_INCLUDE_DIR}
-  ${LISTOMVG_SOURCE_DIR}/third_party/cmdLine
-  ${LISTOMVG_SOURCE_DIR}/third_party/stlAddition
-  ${LISTOMVG_SOURCE_DIR}/third_party/stlplus3/filesystemSimplified/
+  ${LISTOMVG_SOURCE_DIR}/../lib/cmdLine
+  ${LISTOMVG_SOURCE_DIR}/../lib/stlAddition
+  ${LISTOMVG_SOURCE_DIR}/../lib/stlplus3/filesystemSimplified/
 )
 
 # ==============================================================================

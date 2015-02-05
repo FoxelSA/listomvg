@@ -50,8 +50,8 @@
 #include <string.h>
 #include <cstring>
 #include <types.hpp>
-#include "third_party/cmdLine/cmdLine.h"
-#include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
+#include "../lib/cmdLine/cmdLine.h"
+#include "../lib/stlplus3/filesystemSimplified/file_system.hpp"
 
 using namespace std;
 
