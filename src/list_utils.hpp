@@ -62,5 +62,15 @@ bool isInputValid(  const char* softName,
                     const bool & bUseCalibPrincipalPoint,
                     const double & focalPixPermm );
 
+/*********************************************************************
+ *  load calibration data related to elphel cameras
+ *
+ *********************************************************************/
+
+bool  loadCalibrationData( std::vector< sensorData >  & vec_sensorData,
+                    const std::string & sMountPoint,
+                    const std::string & smacAddress) ;
+
+
 
 #endif /* LIST_UTILS_HPP_ */
