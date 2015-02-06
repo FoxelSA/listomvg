@@ -45,7 +45,9 @@ cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 add_executable(listomvg
                     tools.cpp
                     types.cpp
-                    list.cpp )
+                    list_utils.cpp
+                    list.cpp
+                    )
 target_link_libraries(listomvg
   ${LISTOMVG_LIBRARY_LIST}
 )
