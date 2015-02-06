@@ -41,6 +41,7 @@
 #include <tools.hpp>
 #include <cstring>
 #include <iostream>
+#include <fstream>
 #include <list_utils.hpp>
 #include "../lib/stlplus3/filesystemSimplified/file_system.hpp"
 
@@ -219,5 +220,45 @@ bool  loadCalibrationData(  std::vector< sensorData >  & vec_sensorData,
           std::cerr << " Could not read calibration data. Exit" << std::endl;
           return false;
       }
+
+}
+
+/*********************************************************************
+*  read channel file (if exists )
+*
+*********************************************************************/
+
+void loadChannelFile( std::vector< li_Size_t >  & keptChan,
+                      const std::string & sChannelFile )
+{
+    // if channel file is given, read it
+    if( !sChannelFile.empty() )
+    {
+        std::ifstream  inFile(sChannelFile.c_str());
+        li_Size_t chan;
+
+        if( inFile.is_open() )
+        {
+            while( inFile >> chan ) // one channel per line
+            {
+                keptChan.push_back(chan);
+            }
+
+            if( keptChan.size() == 0 )
+            {
+                std::cerr << "Warning:: No channels are read in file, use all image instead" << std::endl;
+            }
+        }
+        else
+        {
+            std::cerr << "Warning :: Could not open channel file. Use all image instead" << std::endl;
+        }
+
+        inFile.close();
+    }
+    else
+    {
+        std::cout << "\n Keep all channels " << std::endl;
+    }
 
 }

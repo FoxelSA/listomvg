@@ -127,40 +127,21 @@ int main(int argc, char **argv)
        {
             return EXIT_FAILURE;
        }
-       else
+       else  // if calibration information are loaded, go ahead
        {
          // load image filename
          std::vector<std::string> vec_image = stlplus::folder_files( sImageDir );
 
          // load kept channel
          std::vector< li_Size_t > keptChan;
-
-         if( !sChannelFile.empty() ){
-           std::ifstream  inFile(sChannelFile.c_str());
-           li_Size_t chan;
-
-           if( inFile.is_open() )
-           {
-             while( inFile >> chan )
-             {
-               keptChan.push_back(chan);
-             }
-           }
-
-           inFile.close();
-         }
-
-         if( keptChan.empty() )
-         {
-           std::cerr << "\n Keep all channels " << std::endl;
-         }
+         loadChannelFile( keptChan, sChannelFile );
 
          //initialize rig map
          std::map<std::string, li_Size_t>  mapRigPerImage;
 
          // Write the new file
-         std::ofstream listTXT( stlplus::create_filespec( sOutputDir,
-         "lists.txt" ).c_str() );
+         std::ofstream listTXT( stlplus::create_filespec( sOutputDir,"lists.txt" ).c_str() );
+
          if ( listTXT )
          {
            std::sort(vec_image.begin(), vec_image.end());

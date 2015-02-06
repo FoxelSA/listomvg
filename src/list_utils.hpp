@@ -71,6 +71,14 @@ bool  loadCalibrationData( std::vector< sensorData >  & vec_sensorData,
                     const std::string & sMountPoint,
                     const std::string & smacAddress) ;
 
+/*********************************************************************
+ *  read channel file (if exists )
+ *
+ *********************************************************************/
+
+void loadChannelFile( std::vector< li_Size_t >  & keptChan,
+                    const std::string & sChannelFile );
+
 
 
 #endif /* LIST_UTILS_HPP_ */
