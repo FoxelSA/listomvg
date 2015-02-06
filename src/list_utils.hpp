@@ -80,5 +80,20 @@ void loadChannelFile( std::vector< li_Size_t >  & keptChan,
                     const std::string & sChannelFile );
 
 
+/*********************************************************************
+*  compute camera and rig intrinsic parameters
+*
+*********************************************************************/
+
+bool computeInstrinsicPerImages(
+                      std::vector<std::string> & vec_image,
+                      const std::vector< sensorData > & vec_sensorData,
+                      const std::vector< li_Size_t >  & keptChan,
+                      const std::string & sImageDir,
+                      const std::string & sOutputDir,
+                      const double & focalPixPermm,
+                      const bool & bUsePrincipalPoint,
+                      const bool & bUseRigidRig );
+
 
 #endif /* LIST_UTILS_HPP_ */
