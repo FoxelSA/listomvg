@@ -39,108 +39,6 @@
 
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 
-project(listomvg C CXX)
-
-# ==============================================================================
-#  C / C++ flags
-# ==============================================================================
-set(CMAKE_CXX_COMPILER g++)
-set(CMAKE_BUILD_TYPE Debug)
-
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
-    "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set(warnings "-Wall -Wextra -pedantic")
-    set(cxx_flags "-std=c++11")
-endif()
-
-if (NOT CONFIGURED_ONCE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${warnings} ${cxx_flags}"
-        CACHE STRING "Flags used by the compiler during all build types." FORCE)
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${warnings}"
-        CACHE STRING "Flags used by the compiler during all build types." FORCE)
-endif()
-
-set(LISTOMVG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-
-# ==============================================================================
-# add a target to generate API documentation with Doxygen
-# ===============================================================================
-find_package(Doxygen)
-if(DOXYGEN_FOUND)
-  add_custom_target(doc
-        ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../Doxyfile
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../
-        COMMENT "Generating API documentation with Doxygen" VERBATIM
-  )
-endif(DOXYGEN_FOUND)
-
-# ==============================================================================
-# OpenMP detection
-# ==============================================================================
-find_package(OpenMP)
-if (OPENMP_FOUND)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-  if (NOT MSVC)
-    LIST(APPEND LISTOMVG_LIBRARY_DEPENDENCIES gomp)
-  endif (NOT MSVC)
-endif (OPENMP_FOUND)
-
-
-# ==============================================================================
-# listomvg check for dependencies
-# ==============================================================================
-
-# ------------------------------------------------------------------------------
-# pkgconfig / opencv
-# ------------------------------------------------------------------------------
-find_package(PkgConfig)
-find_package(OpenCV REQUIRED)
-
-# ------------------------------------------------------------------------------
-# libfastcal
-# ------------------------------------------------------------------------------
-add_custom_target(
-  fastcal
-  WORKING_DIRECTORY ${LISTOMVG_SOURCE_DIR}/../lib/libfastcal
-  COMMAND make
-)
-
-set(LIBFASTCAL_INCLUDE_DIR ${LISTOMVG_SOURCE_DIR}/../lib/libfastcal/src)
-set(LIBFASTCAL_LIBS ${LISTOMVG_SOURCE_DIR}/../lib/libfastcal/bin/libfastcal.a)
-
-# ------------------------------------------------------------------------------
-# stlplus
-# ------------------------------------------------------------------------------
-add_custom_target(
-  stlplus
-  WORKING_DIRECTORY ${LISTOMVG_SOURCE_DIR}/../lib/stlplus3/
-  COMMAND cmake .
-  COMMAND make
-)
-
-set(LIBSTL_LIBS ${LISTOMVG_SOURCE_DIR}/../lib/stlplus3/libstlplus.a)
-
-# ==============================================================================
-# Include directories
-# ==============================================================================
-include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${LIBFASTCAL_INCLUDE_DIR}
-  ${LISTOMVG_SOURCE_DIR}/../lib/cmdLine
-  ${LISTOMVG_SOURCE_DIR}/../lib/stlAddition
-  ${LISTOMVG_SOURCE_DIR}/../lib/stlplus3/filesystemSimplified/
-)
-
-# ==============================================================================
-# Library list
-# ==============================================================================
-set(LISTOMVG_LIBRARY_LIST
-  ${LIBFASTCAL_LIBS}
-  ${OpenCV_LIBS}
-  ${LIBSTL_LIBS}
-  ${LISTOMVG_LIBRARY_DEPENDENCIES}
-)
-
 # ==============================================================================
 # Build Executable
 # ==============================================================================
@@ -153,6 +51,6 @@ target_link_libraries(listomvg
 )
 
 add_dependencies(listomvg fastcal stlplus)
+set_target_properties( listomvg PROPERTIES RUNTIME_OUTPUT_DIRECTORY .. )
 
-set(CONFIGURED_ONCE TRUE CACHE INTERNAL
-    "A flag showing that CMake has configured at least once.")
+install(TARGETS listomvg DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
