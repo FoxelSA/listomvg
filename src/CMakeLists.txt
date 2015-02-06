@@ -144,7 +144,10 @@ set(LISTOMVG_LIBRARY_LIST
 # ==============================================================================
 # Build Executable
 # ==============================================================================
-add_executable(listomvg list.cpp)
+add_executable(listomvg
+                    tools.cpp
+                    types.cpp
+                    list.cpp )
 target_link_libraries(listomvg
   ${LISTOMVG_LIBRARY_LIST}
 )

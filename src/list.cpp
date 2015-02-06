@@ -41,7 +41,13 @@
 #include <set>
 #include <map>
 #include <stdlib.h>
+#include <ctype.h>
+#include <stdlib.h>
+#include <fstream>
+#include <cstring>
 #include "progress.hpp"
+#include "../lib/cmdLine/cmdLine.h"
+#include "../lib/stlplus3/filesystemSimplified/file_system.hpp"
 
 using namespace std;
 
