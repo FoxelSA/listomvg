@@ -93,8 +93,31 @@ bool isInputValid( const char*  softName,
             // if output dir is empty, create it
             if ( !stlplus::folder_exists( sOutputDir ) )
             {
-                std::cerr << "\nCannot create output directory" << std::endl;
-                return false;
+                if( !stlplus::folder_create ( sOutputDir ) )
+                {
+                    std::cerr << "\nCannot create output directory" << std::endl;
+                    return false;
+                }
+                else
+                {
+                    // check if mac address is given
+                    if( smacAddress.empty() )
+                    {
+                      std::cerr << "\n No mac address given " << std::endl;
+                      return false;
+                    }
+                    else
+                    {
+                      // check if mount point is given
+                      if( sMountPoint.empty() )
+                      {
+                        std::cerr << "\n No mount point given " << std::endl;
+                        return false;
+                      }
+                      else
+                        return true;
+                    }
+                }
             }
             else
             {

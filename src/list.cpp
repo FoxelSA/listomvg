@@ -408,7 +408,7 @@ int main(int argc, char **argv)
 
              // create stream
              std::ostringstream os;
-             os.precision(16);
+             os.precision(6);
 
              // check if we have to keep this timestamp
              it=imageToRemove.find(iter->first);
