@@ -145,18 +145,20 @@ int main(int argc, char **argv)
                                    bUseCalibPrincipalPoint,
                                    bRigidRig );
 
-          // do final check to ensure all went well
-          if( isExported )
-          {
-              std::cout << "Sucessfully exported list to folder. Quit" << std::endl;
-              return EXIT_SUCCESS;
-          }
-          else
-          {
-              std::cerr << "Could not export list to folder. Exit " << std::endl;
-              return EXIT_FAILURE;
-          }
-     }
+            // do final check to ensure all went well
+            if( isExported )
+            {
+                std::cout << "Sucessfully exported list to folder. Quit" << std::endl;
+                return EXIT_SUCCESS;
+            }
+            else
+            {
+                std::cerr << "Could not export list to folder. Exit " << std::endl;
+                return EXIT_FAILURE;
+            }
 
-   }
+        }
+
+    }
+    
 }
