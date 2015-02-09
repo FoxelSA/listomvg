@@ -36,6 +36,39 @@
  *      Attribution" section of <http://foxel.ch/license>.
  */
 
+ /*! \file list_utils.hpp
+ * \author Stephane Flotron <s.flotron@foxel.ch>
+ */
+ /*! \mainpage listomvg
+ * \section listomvg
+ *
+ * For Elphel's camera, generate file lists.txt needed by openMVG, for rigid rig and standard openMVG.
+ *
+ * \section Documentation
+ *
+ * Documentation can be consulted on the [wiki](https://github.com/FoxelSA/listomvg/wiki).
+ *
+ * \section Copyright
+ *
+ * Copyright (c) 2014-2015 FOXEL SA - [http://foxel.ch](http://foxel.ch)<br />
+ * This program is part of the FOXEL project <[http://foxel.ch](http://foxel.ch)>.
+ *
+ * Please read the [COPYRIGHT.md](COPYRIGHT.md) file for more information.
+ *
+ * \section License
+ *
+ * This program is licensed under the terms of the
+ * [GNU Affero General Public License v3](http://www.gnu.org/licenses/agpl.html)
+ * (GNU AGPL), with two additional terms. The content is licensed under the terms
+ * of the [Creative Commons Attribution-ShareAlike 4.0 International](http://creativecommons.org/licenses/by-sa/4.0/)
+ * (CC BY-SA) license.
+ *
+ * You must read <[http://foxel.ch/license](http://foxel.ch/license)> for more
+ *information about our Licensing terms and our Usage and Attribution guidelines.
+ *
+ */
+
+
 #ifndef LIST_UTILS_HPP_
 #define LIST_UTILS_HPP_
 
@@ -56,6 +89,23 @@ using namespace std;
 ********************************************************************************
 */
 
+/*! \brief Check input data validity
+*
+* This function check that the argument given to listomvg are valid.
+*
+* \param softname       It's argv[0]'s value
+* \param sImageDir      The directory containing the image you want to use
+* \param sOuputDir      The directory where you want to put your lists.txt file
+* \param smacAddress    The mac address of the considered elphel camera
+* \param sMountPoint    The mount point of the camera folder
+* \param sChannelFile   The file containing the channel you want to use
+* \param bRigidRig      Bool value indicating if we use rig structure or not
+* \param bUseCalibPrincipalPoint   Bool value indicating if we use (or not) the principal point of calibration
+* \param focalPixPermm  the focal length in pixel per mm (optionnal argument)
+*
+* \return bool value that says if the loading was sucessfull or not
+*/
+
 bool isInputValid(  const char* softName,
                     const std::string& sImageDir,
                     const std::string& sOutputDir,
@@ -70,6 +120,19 @@ bool isInputValid(  const char* softName,
  *  load calibration data related to elphel cameras
  *
  *********************************************************************/
+
+ /*! \brief Calibration data loading
+ *
+ * This function parse channel of considered elephel camera and load all calibration
+ * informations needed by openMVG input file.
+ *
+ * \param vec_sensorData   Vector containing all sensor informations
+ * \param sensor_index     the sensor index of elphel camera (between 0 and Channels-1)
+ * \param sMountPoint      The mount point of the camera folder
+ * \param smacAddress      The mac address of the considered elphel camera
+ *
+ * \return bool value that says if the loading was sucessfull or not
+ */
 
 bool  loadCalibrationData( std::vector< sensorData >  & vec_sensorData,
                     const std::string & sMountPoint,
