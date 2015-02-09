@@ -2,6 +2,6 @@ build/
 bin/
 doc/
 obj/
-src/third_party/stlplus3/*make*
-src/third_party/stlplus3/*Make*
-src/third_party/stlplus3/*.a
+lib/stlplus3/*make*
+lib/stlplus3/*Make*
+lib/stlplus3/*.a

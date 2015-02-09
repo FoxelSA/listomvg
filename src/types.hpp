@@ -36,9 +36,40 @@
  *      Attribution" section of <http://foxel.ch/license>.
  */
 
+ /*! \file types.hpp
+ * \author Stephane Flotron <s.flotron@foxel.ch>
+ */
+ /*! \mainpage listomvg
+ * \section listomvg
+ *
+ * For Elphel's camera, generate file lists.txt needed by openMVG, for rigid rig and standard openMVG.
+ *
+ * \section Documentation
+ *
+ * Documentation can be consulted on the [wiki](https://github.com/FoxelSA/listomvg/wiki).
+ *
+ * \section Copyright
+ *
+ * Copyright (c) 2014-2015 FOXEL SA - [http://foxel.ch](http://foxel.ch)<br />
+ * This program is part of the FOXEL project <[http://foxel.ch](http://foxel.ch)>.
+ *
+ * Please read the [COPYRIGHT.md](COPYRIGHT.md) file for more information.
+ *
+ * \section License
+ *
+ * This program is licensed under the terms of the
+ * [GNU Affero General Public License v3](http://www.gnu.org/licenses/agpl.html)
+ * (GNU AGPL), with two additional terms. The content is licensed under the terms
+ * of the [Creative Commons Attribution-ShareAlike 4.0 International](http://creativecommons.org/licenses/by-sa/4.0/)
+ * (CC BY-SA) license.
+ *
+ * You must read <[http://foxel.ch/license](http://foxel.ch/license)> for more
+ *information about our Licensing terms and our Usage and Attribution guidelines.
+ *
+ */
+
  #include <fastcal-all.h>
  #include <string>
- #include <iostream>
 
  using namespace std;
 
@@ -54,6 +85,47 @@
 /******************************************************************************
  * sensorData
  *****************************************************************************/
+
+ /*! \struct sensorData
+ * \brief structure used to store calibration information
+ *
+ * This structure is designed to store the needed informations coming from
+ * the elphel camera calibration
+ *
+ * \var sensorData::lfWidth
+ *  Width of sensor image
+ * \var sensorData::lfHeight
+ *  Height of sensor image
+ * \var sensorData::lfChannels
+ *  Number of channels of elphel camera
+ * \var sensorData::lfFocalLength
+ *  Focal length in mm
+ * \var sensorData::lfPixelSize
+ *  pixel size in mm
+ * \var sensorData::lfAzimuth
+ *  azimuth angle in elphel coordinate frame (in radian)
+ * \var sensorData::lfHeading
+ *  heading angle in elphel coordinate frame (in radian)
+ * \var sensorData::lfElevation
+ *  Elevation angle in elphel coordinate frame (in radian)
+ * \var sensorData::lfRoll
+ *  roll around z axis (in radian)
+ * \var sensorData::lfpx0
+ *  x coordinate of principal point of sensor image, in pixels
+ * \var sensorData::lfpy0
+ *  y coordinate of principal point of sensor image, in pixels
+ * \var sensorData::lfRadius
+ *  radius of optical center of channel in elphel coordinate frame
+ * \var sensorData::lfCheight
+ *  height of optical center of channel in elphel coordinate frame
+ * \var sensorData::lfEntrance
+ *  Entrance pupil forward of channel
+ * \var sensorData::R
+ *  Rotation rig coordinate frame to sensor coordinate frame
+ * \var sensorData::C
+ *  sensor's optical center in rig coordinate frame
+ */
+
 struct sensorData
 {
     lf_Size_t   lfWidth     = 0;
@@ -83,6 +155,31 @@ struct sensorData
  /******************************************************************************
  * camera information
  *****************************************************************************/
+
+ /*! \struct camInformation
+ * \brief structure used to store calibration information used for file generation
+ *
+ * This structure is designed to store the needed informations coming from
+ * the elphel camera calibration
+ *
+ * \var camInformation::width
+ *  Width of sensor image
+ * \var camInformation::height
+ *  Height of sensor image
+ * \var camInformation::subChan
+ *  The subchannel number
+ * \var camInformation::focal
+ *  Focal length in pixel per mm
+ * \var camInformation::px0
+ *  X coordinate of principal point
+ * \var camInformation::py0
+ *  Y coordinate of principal point
+ * \var camInformation::R
+ *  Rotation rig coordinate frame to sensor coordinate frame
+ * \var camInformation::C
+ *  sensor's optical center in rig coordinate frame
+ */
+
  struct camInformation
 {
   std::string sRigName    = "";
@@ -107,55 +204,17 @@ struct sensorData
 typedef std::pair<std::string, camInformation > imageNameAndIntrinsic;
 
  // supported image format
-
  enum Format {
    Pnm, Png, Jpg, Tiff, Unknown
  };
 
  Format GetFormat(const char *c);
 
-// lexicographical format used
- static bool CmpFormatExt(const char *a, const char *b) {
-   size_t len_a = strlen(a);
-   size_t len_b = strlen(b);
-   if (len_a != len_b) return false;
-   for (size_t i = 0; i < len_a; ++i)
-     if (tolower(a[i]) != tolower(b[i]))
-       return false;
-   return true;
- }
+ bool operator==(const imageNameAndIntrinsic& i1, const imageNameAndIntrinsic& i2);
 
- Format GetFormat(const char *c) {
-   const char *p = strrchr (c, '.');
-
-   if (p == NULL)
-     return Unknown;
-
-   if (CmpFormatExt(p, ".png")) return Png;
-   if (CmpFormatExt(p, ".ppm")) return Pnm;
-   if (CmpFormatExt(p, ".pgm")) return Pnm;
-   if (CmpFormatExt(p, ".pbm")) return Pnm;
-   if (CmpFormatExt(p, ".pnm")) return Pnm;
-   if (CmpFormatExt(p, ".jpg")) return Jpg;
-   if (CmpFormatExt(p, ".jpeg")) return Jpg;
-   if (CmpFormatExt(p, ".tif")) return Tiff;
-   if (CmpFormatExt(p, ".tiff")) return Tiff;
-
-   cerr << "Error: Couldn't open " << c << " Unknown file format" << std::endl;
-   return Unknown;
- }
-
- bool operator==(const imageNameAndIntrinsic& i1, const imageNameAndIntrinsic& i2) {
-   return (i1.first == i2.first);
- }
-
- bool operator!=(const imageNameAndIntrinsic& i1, const imageNameAndIntrinsic& i2) {
-   return !(i1.first == i2.first);
- }
+ bool operator!=(const imageNameAndIntrinsic& i1, const imageNameAndIntrinsic& i2);
 
  // Lexicographical ordering of matches. Used to remove duplicates.
- bool operator<(const imageNameAndIntrinsic& i1, const imageNameAndIntrinsic& i2) {
-     return i1.first < i2.first;
- }
+ bool operator<(const imageNameAndIntrinsic& i1, const imageNameAndIntrinsic& i2);
 
  #endif /* TYPES_HPP_ */

@@ -36,22 +36,46 @@
  *      Attribution" section of <http://foxel.ch/license>.
  */
 
+ /*! \file tools.hpp
+ * \author Stephane Flotron <s.flotron@foxel.ch>
+ */
+ /*! \mainpage listomvg
+ * \section listomvg
+ *
+ * For Elphel's camera, generate file lists.txt needed by openMVG, for rigid rig and standard openMVG.
+ *
+ * \section Documentation
+ *
+ * Documentation can be consulted on the [wiki](https://github.com/FoxelSA/listomvg/wiki).
+ *
+ * \section Copyright
+ *
+ * Copyright (c) 2014-2015 FOXEL SA - [http://foxel.ch](http://foxel.ch)<br />
+ * This program is part of the FOXEL project <[http://foxel.ch](http://foxel.ch)>.
+ *
+ * Please read the [COPYRIGHT.md](COPYRIGHT.md) file for more information.
+ *
+ * \section License
+ *
+ * This program is licensed under the terms of the
+ * [GNU Affero General Public License v3](http://www.gnu.org/licenses/agpl.html)
+ * (GNU AGPL), with two additional terms. The content is licensed under the terms
+ * of the [Creative Commons Attribution-ShareAlike 4.0 International](http://creativecommons.org/licenses/by-sa/4.0/)
+ * (CC BY-SA) license.
+ *
+ * You must read <[http://foxel.ch/license](http://foxel.ch/license)> for more
+ *information about our Licensing terms and our Usage and Attribution guidelines.
+ *
+ */
+
 #ifndef TOOLS_HPP_
 #define TOOLS_HPP_
 
-#include <iostream>
-#include <iomanip>
-#include <fstream>
+
 #include <fastcal-all.h>
-#include <ctype.h>
-#include <unistd.h>
 #include <vector>
-#include <stdlib.h>
 #include <string.h>
-#include <cstring>
 #include <types.hpp>
-#include "third_party/cmdLine/cmdLine.h"
-#include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
 
 using namespace std;
 
@@ -61,79 +85,43 @@ using namespace std;
 ********************************************************************************
 */
 
-static bool split ( const std::string src, const std::string& delim, std::vector<std::string>& vec_value )
-{
-  bool bDelimiterExist = false;
-  if ( !delim.empty() )
-  {
-    vec_value.clear();
-    std::string::size_type start = 0;
-    std::string::size_type end = std::string::npos -1;
+/*! \brief Split a string using a delimiter
+*
+* This function split a string into substring using a delimiter and fill a string
+* vector
+*
+* \param src         Input string
+* \param delim       Delimiter
+* \param vec_value   vector containing the sub string
+*
+* \return bool value that says if the splitting was sucessfull or not
+*/
 
-    while ( end != std::string::npos )
-    {
-      end = src.find ( delim, start );
-      vec_value.push_back ( src.substr ( start, end - start ) );
-      start = end + delim.size();
-    }
+bool split ( const std::string src, const std::string& delim, std::vector<std::string>& vec_value );
 
-    if ( vec_value.size() >= 2 )
-      bDelimiterExist = true;
-  }
-  return bDelimiterExist;
-}
 
 /*******************************************************************************
 *  Given 4 angles, compute Elphel rotation
 *
 ********************************************************************************
 */
- void computeRotationEl ( li_Real_t* R , li_Real_t az , li_Real_t head, li_Real_t ele , li_Real_t roll)
- {
-    //z-axis rotation
-    li_Real_t Rz[3][3] = {
-       { cos(roll),-sin(roll), 0.0},
-       {-sin(roll),-cos(roll), 0.0},
-       {       0.0,      0.0, 1.0} };
 
-    // x-axis rotation
-    li_Real_t Rx[3][3] = {
-       {1.0,      0.0,     0.0},
-       {0.0, cos(ele),sin(ele)},
-       {0.0,-sin(ele),cos(ele)} };
+/*! \brief Compute rotation rig referential to sensor referential
+*
+* This function compute the rotation rig referential to sensor referential using
+* elphel calibration angle and rotation.
+*
+* \param R           Computed rotation
+* \param az          Elphel's Angle azimuth (in radian) of subcamera
+* \param head        Elphel's Angle heading (in radian) of subcamera
+* \param ele         Elphel's Angle elevation (in radian) of subcamera
+* \param roll        Elphel's Angle roll (in radian) of subcamera
+*
+* \return The rotation in the array R
+*/
 
-    // y axis rotation
-    li_Real_t Ry[3][3] = {
-       { cos(head+az), 0.0, sin(head+az)},
-       {          0.0,-1.0,          0.0},
-       {-sin(head+az), 0.0, cos(head+az)} };
 
-    // 3) R = R2*R1*R0 transform sensor coordinate to panorama coordinate
-    li_Real_t  RxRz[3][3] = {0.0};
-    li_Real_t  RT[3][3] = {0.0};
-
-    // compute product of rotations
-    int i=0, j=0;
-
-    for(i=0 ; i < 3 ; ++i)
-      for(j=0; j < 3 ; ++j)
-         RxRz[i][j] = Rx[i][0] * Rz[0][j] + Rx[i][1] * Rz[1][j] + Rx[i][2] * Rz[2][j];
-
-    for(i=0 ; i < 3 ; ++i)
-      for(j=0; j < 3 ; ++j)
-         RT[i][j] = Ry[i][0] * RxRz[0][j] + Ry[i][1] * RxRz[1][j] + Ry[i][2] * RxRz[2][j];
-
-    // transpose because we need the transformation panorama to sensor coordinate !
-    R[0] = RT[0][0];
-    R[1] = RT[1][0];
-    R[2] = RT[2][0];
-    R[3] = RT[0][1];
-    R[4] = RT[1][1];
-    R[5] = RT[2][1];
-    R[6] = RT[0][2];
-    R[7] = RT[1][2];
-    R[8] = RT[2][2];
-}
+ void computeRotationEl ( li_Real_t* R , li_Real_t az , li_Real_t head, li_Real_t ele , li_Real_t roll);
 
 /********************************************************************************
 *  Given three angles, entrance pupil forward, radius and height, compute optical center position.
@@ -141,25 +129,25 @@ static bool split ( const std::string src, const std::string& delim, std::vector
 *********************************************************************************
 */
 
+/*! \brief Compute optical center of elphel's subcamera
+*
+* This function compute the optical center of a given elphel subcamera
+*
+* \param C           Computed optical center
+* \param radius      Radius of optical center in elphel's coordinate frame
+* \param heigt       Height of optical center in elphel's coordinate frame
+* \param azimuth     Elphel's Angle azimuth (in radian) of subcamera
+* \param R           Rotation rig referential frame to sensor frame
+* \param entrancePupilForward  Entrance pupil forward of the associated camera
+*
+* \return The optical center in the array C
+*/
+
  void getOpticalCenter ( li_Real_t* C ,
                 const li_Real_t& radius,
                 const li_Real_t& height,
                 const li_Real_t& azimuth,
                 const li_Real_t* R,
-                const li_Real_t& entrancePupilForward )
-{
-  // compute lense Center from data
-  li_Real_t lensCenter[3] = {0.0, 0.0, 0.0};
-
-  lensCenter[0] = radius * sin(azimuth);
-  lensCenter[1] = height ;
-  lensCenter[2] = radius * cos(azimuth);
-
-  // C = lensCenter + R.entrancePupilForward, where R is roation sensor to world.
-  C[0] =  lensCenter[0] + R[6] * entrancePupilForward;
-  C[1] = -lensCenter[1] + R[7] * entrancePupilForward;
-  C[2] =  lensCenter[2] + R[8] * entrancePupilForward;
-
-}
+                const li_Real_t& entrancePupilForward );
 
 #endif /* TOOLS_HPP_ */
