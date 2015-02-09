@@ -36,6 +36,38 @@
  *      Attribution" section of <http://foxel.ch/license>.
  */
 
+ /*! \file tools.hpp
+ * \author Stephane Flotron <s.flotron@foxel.ch>
+ */
+ /*! \mainpage listomvg
+ * \section listomvg
+ *
+ * For Elphel's camera, generate file lists.txt needed by openMVG, for rigid rig and standard openMVG.
+ *
+ * \section Documentation
+ *
+ * Documentation can be consulted on the [wiki](https://github.com/FoxelSA/listomvg/wiki).
+ *
+ * \section Copyright
+ *
+ * Copyright (c) 2014-2015 FOXEL SA - [http://foxel.ch](http://foxel.ch)<br />
+ * This program is part of the FOXEL project <[http://foxel.ch](http://foxel.ch)>.
+ *
+ * Please read the [COPYRIGHT.md](COPYRIGHT.md) file for more information.
+ *
+ * \section License
+ *
+ * This program is licensed under the terms of the
+ * [GNU Affero General Public License v3](http://www.gnu.org/licenses/agpl.html)
+ * (GNU AGPL), with two additional terms. The content is licensed under the terms
+ * of the [Creative Commons Attribution-ShareAlike 4.0 International](http://creativecommons.org/licenses/by-sa/4.0/)
+ * (CC BY-SA) license.
+ *
+ * You must read <[http://foxel.ch/license](http://foxel.ch/license)> for more
+ *information about our Licensing terms and our Usage and Attribution guidelines.
+ *
+ */
+
 #ifndef TOOLS_HPP_
 #define TOOLS_HPP_
 
@@ -53,6 +85,18 @@ using namespace std;
 ********************************************************************************
 */
 
+/*! \brief Split a string using a delimiter
+*
+* This function split a string into substring using a delimiter and fill a string
+* vector
+*
+* \param src         Input string
+* \param delim       Delimiter
+* \param vec_value   vector containing the sub string
+*
+* \return bool value that says if the splitting was sucessfull or not
+*/
+
 bool split ( const std::string src, const std::string& delim, std::vector<std::string>& vec_value );
 
 
@@ -61,12 +105,42 @@ bool split ( const std::string src, const std::string& delim, std::vector<std::s
 *
 ********************************************************************************
 */
+
+/*! \brief Compute rotation rig referential to sensor referential
+*
+* This function compute the rotation rig referential to sensor referential using
+* elphel calibration angle and rotation.
+*
+* \param R           Computed rotation
+* \param az          Elphel's Angle azimuth (in radian) of subcamera
+* \param head        Elphel's Angle heading (in radian) of subcamera
+* \param ele         Elphel's Angle elevation (in radian) of subcamera
+* \param roll        Elphel's Angle roll (in radian) of subcamera
+*
+* \return The rotation in the array R
+*/
+
+
  void computeRotationEl ( li_Real_t* R , li_Real_t az , li_Real_t head, li_Real_t ele , li_Real_t roll);
 
 /********************************************************************************
 *  Given three angles, entrance pupil forward, radius and height, compute optical center position.
 *
 *********************************************************************************
+*/
+
+/*! \brief Compute optical center of elphel's subcamera
+*
+* This function compute the optical center of a given elphel subcamera
+*
+* \param C           Computed optical center
+* \param radius      Radius of optical center in elphel's coordinate frame
+* \param heigt       Height of optical center in elphel's coordinate frame
+* \param azimuth     Elphel's Angle azimuth (in radian) of subcamera
+* \param R           Rotation rig referential frame to sensor frame
+* \param entrancePupilForward  Entrance pupil forward of the associated camera
+*
+* \return The optical center in the array C
 */
 
  void getOpticalCenter ( li_Real_t* C ,
