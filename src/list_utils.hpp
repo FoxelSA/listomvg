@@ -45,6 +45,8 @@
 #include <tools.hpp>
 #include <map>
 #include <set>
+#include <fstream>
+#include <sstream>
 
 using namespace std;
 
@@ -122,6 +124,18 @@ void keepRepresentativeRigs(
            std::set <string> & imageToRemove,
            const std::map<std::string, std::vector<string> > & mapSubcamPerTimestamp,
            const size_t imageNumber
+);
+
+/*********************************************************************
+*  write image list and intrinsic to file
+*
+*********************************************************************/
+
+void exportToFile(
+          const std::set <string> & imageToRemove,
+          const std::set<imageNameAndIntrinsic>& camAndIntrinsics,
+          std::ofstream& listTXT,
+          const bool & bRigidRig
 );
 
 
