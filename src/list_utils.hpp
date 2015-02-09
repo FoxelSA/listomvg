@@ -103,7 +103,7 @@ using namespace std;
 * \param bUseCalibPrincipalPoint   Bool value indicating if we use (or not) the principal point of calibration
 * \param focalPixPermm  the focal length in pixel per mm (optionnal argument)
 *
-* \return bool value that says if the loading was sucessfull or not
+* \return bool value that says if the arguments are valid or not
 */
 
 bool isInputValid(  const char* softName,
@@ -150,7 +150,7 @@ bool  loadCalibrationData( std::vector< sensorData >  & vec_sensorData,
  * \param keptChan         List of kept channels
  * \param sChannelFile     The complete path of channel file
  *
- * \return bool value that says if the loading was sucessfull or not
+ * \return The list of kept channel if vector keptChan
  */
 
 void loadChannelFile( std::vector< li_Size_t >  & keptChan,
@@ -175,7 +175,7 @@ void loadChannelFile( std::vector< li_Size_t >  & keptChan,
 * \param bUsePrincipalPoint  bool value indicating if we use (or not) principal point from calibration
 * \param bUSeRigidRig        bool value indicating if we use rig structure or not
 *
-* \return bool value that says if the loading was sucessfull or not
+* \return bool value telling if we have generated the file lists.txt
 */
 
 bool computeInstrinsicPerImages(
@@ -197,7 +197,7 @@ bool computeInstrinsicPerImages(
  *
  * This function compute the information needed by openMVG for a single image
  *
- * \param camInfor            Strucutre containing all information needed by openMVG
+ * \param camInfo             Strucutre containing all information needed by openMVG
  * \param vec_sensorData      Calibration data list
  * \param timestamp           Rig timestamp associated to image
  * \param sensor_index        Subchannel number
@@ -205,7 +205,7 @@ bool computeInstrinsicPerImages(
  * \param bUsePrincipalPoint  bool value indicating if we use (or not) principal point from calibration
  * \param bUSeRigidRig        bool value indicating if we use rig structure or not
  *
- * \return bool value that says if the loading was sucessfull or not
+ * \return Camera calibration information in the structure camInfo
  */
 
 void computeImageIntrinsic(
@@ -233,7 +233,7 @@ void computeImageIntrinsic(
 * \param mapSubcamPerTimestamp    Mapping timestamp to associated images and subcameras
 * \param imageNumber              The number of input images
 *
-* \return bool value that says if the loading was sucessfull or not
+* \return The set of image not usable for reconstruction in set imageToRemove
 */
 
 void keepRepresentativeRigs(
@@ -257,7 +257,6 @@ void keepRepresentativeRigs(
 * \param listTXT             The stream that write the information to file lists.txt
 * \param bRigidRig           Use rigid rig or not for reconstruction
 *
-* \return bool value that says if the loading was sucessfull or not
 */
 
 void exportToFile(
