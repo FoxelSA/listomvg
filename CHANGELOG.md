@@ -1,3 +1,8 @@
+## 1.2 (February 9, 2015)
+- `FIXED`: Better code structure
+- `FIXED`: Better CMake inclusion
+- `FIXED`: Add doxygen documentation
+
 ## 1.1.1 (January 23, 2015)
 - `FIXED`: Crash when parallel mode is activated
 - `FIXED`: updated submodule libfastcal to latest version
