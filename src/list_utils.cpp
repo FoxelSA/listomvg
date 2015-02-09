@@ -271,6 +271,82 @@ void loadChannelFile( std::vector< li_Size_t >  & keptChan,
 }
 
 /*********************************************************************
+*  compute image intrinsic parameter
+*
+*********************************************************************/
+
+void computeImageIntrinsic(
+                camInformation & camInfo,
+                const std::vector < sensorData > & vec_sensorData,
+                const std::string & timestamp,
+                const size_t   & sensor_index,
+                const double   & focalPixPermm,
+                const bool     & bUseCalibPrincipalPoint,
+                const bool     & bRigidRig )
+{
+    // affect width and height
+    camInfo.width  = vec_sensorData[sensor_index].lfWidth;
+    camInfo.height = vec_sensorData[sensor_index].lfHeight;
+
+    // Create list if focal is given
+    if( focalPixPermm > 0.0 )
+    {
+
+        camInfo.focal = focalPixPermm ;
+
+        if(!bUseCalibPrincipalPoint)
+        {
+            camInfo.px0   = camInfo.width  / 2.0 ;
+            camInfo.py0   = camInfo.height / 2.0 ;
+        }
+        else
+        {
+            camInfo.px0   = vec_sensorData[sensor_index].lfpx0;
+            camInfo.py0   = vec_sensorData[sensor_index].lfpy0;
+        }
+
+    }
+    // Create list if full calibration data are used
+    else
+    {
+        li_Real_t focalPix = vec_sensorData[sensor_index].lfFocalLength / vec_sensorData[sensor_index].lfPixelSize ;
+
+        camInfo.focal = focalPix;
+        camInfo.px0   = vec_sensorData[sensor_index].lfpx0;
+        camInfo.py0   = vec_sensorData[sensor_index].lfpy0;
+    }
+
+    // if rigid rig, add some informations
+    if(bRigidRig)
+    {
+        // export rig index
+        camInfo.sRigName = timestamp;
+
+        // export channel
+        camInfo.subChan = sensor_index;
+
+        // export rotation
+        camInfo.R[0] = vec_sensorData[sensor_index].R[0] ;
+        camInfo.R[1] = vec_sensorData[sensor_index].R[1] ;
+        camInfo.R[2] = vec_sensorData[sensor_index].R[2] ;
+        camInfo.R[3] = vec_sensorData[sensor_index].R[3] ;
+        camInfo.R[4] = vec_sensorData[sensor_index].R[4] ;
+        camInfo.R[5] = vec_sensorData[sensor_index].R[5] ;
+        camInfo.R[6] = vec_sensorData[sensor_index].R[6] ;
+        camInfo.R[7] = vec_sensorData[sensor_index].R[7] ;
+        camInfo.R[8] = vec_sensorData[sensor_index].R[8] ;
+
+        // export translation
+        camInfo.C[0] = vec_sensorData[sensor_index].C[0] ;
+        camInfo.C[1] = vec_sensorData[sensor_index].C[1] ;
+        camInfo.C[2] = vec_sensorData[sensor_index].C[2] ;
+
+    }
+
+}
+
+
+/*********************************************************************
 *  compute camera and rig intrinsic parameters
 *
 *********************************************************************/
@@ -309,147 +385,100 @@ bool computeInstrinsicPerImages(
         std::string             timestamp;
         std::string             sImageFilename;
 
-        li_Size_t width         = 0;
-        li_Size_t height        = 0;
         li_Size_t sensor_index  = 0;
         li_Size_t i             = 0;
         li_Size_t idx           = 0;
-        li_Real_t focalPix      = 0;
         bool      bKeepChannel  = false;
 
         // do a parallel loop to improve CPU TIME
-        #pragma omp parallel firstprivate(iter_image, splitted_name, timestamp, width, height, sensor_index, i, bKeepChannel, sImageFilename, focalPix)
+        #pragma omp parallel firstprivate(iter_image, splitted_name, timestamp, sensor_index, i, bKeepChannel, sImageFilename )
         #pragma omp for schedule(dynamic)
         for ( idx = 0; idx < vec_image.size(); ++idx)
         {
-          //advance iterator
-          iter_image = vec_image.begin();
-          std::advance(iter_image, idx);
+            //advance iterator
+            iter_image = vec_image.begin();
+            std::advance(iter_image, idx);
 
-          // Read meta data to fill width height and focalPixPermm
-          sImageFilename = stlplus::create_filespec( sImageDir, *iter_image );
+            // Read meta data to fill width height and focalPixPermm
+            sImageFilename = stlplus::create_filespec( sImageDir, *iter_image );
 
-          // Test if the image format is supported:
-          if (GetFormat(sImageFilename.c_str()) == Unknown)
-            continue; // image cannot be opened
+            // Test if the image format is supported:
+            if (GetFormat(sImageFilename.c_str()) == Unknown)
+            {
+                std::cerr << " Warning : image " << sImageFilename << "\'s format is not supported." << std::endl;
+            }
+            else
+            {
+                // extract channel information from image name
+                splitted_name.clear();
 
-            // extract channel information from image name
-            splitted_name.clear();
+                split( *iter_image, "-", splitted_name );
+                sensor_index=atoi(splitted_name[1].c_str());
 
-            split( *iter_image, "-", splitted_name );
-            sensor_index=atoi(splitted_name[1].c_str());
+                // now load image information and keep channel index and timestamp
+                timestamp=splitted_name[0];
 
-            // extract image width and height
-            width  = vec_sensorData[sensor_index].lfWidth;
-            height = vec_sensorData[sensor_index].lfHeight;
+                // if no channel file is given, keep all images
+                bKeepChannel = false;
 
-            // now load image information and keep channel index and timestamp
-            timestamp=splitted_name[0];
-
-            // if no channel file is given, keep all images
-            bKeepChannel = false;
-
-            if( keptChan.empty() )
-              bKeepChannel = true ;
-              else
-              {
-                for( i = 0 ; i < keptChan.size() ; ++i )
+                if( keptChan.empty() )
                 {
-                  if( sensor_index == keptChan[i] )
-                    bKeepChannel = true;
-                  }
+                    bKeepChannel = true ;
                 }
-
-                // export camera infor
-                camInformation   camInfo;
+                else
+                {
+                    for( i = 0 ; i < keptChan.size() ; ++i )
+                    {
+                        if( sensor_index == keptChan[i] )
+                            bKeepChannel = true;
+                    }
+                }
 
                 // export only kept channel
                 if( bKeepChannel )
                 {
-                  #pragma omp critical
-                {
-                  // insert timestamp in the map
-                  ret = mapRigPerImage.insert ( std::pair<std::string, li_Size_t>(timestamp, mapRigPerImage.size()) );
-                  if(ret.second == true )
-                  {
-                    mapRigPerImage[timestamp] = mapRigPerImage.size()-1;
-                  }
+                    #pragma omp critical
+                    {
+                        // insert timestamp in the map
+                        ret = mapRigPerImage.insert ( std::pair<std::string, li_Size_t>(timestamp, mapRigPerImage.size()) );
+                        if(ret.second == true )
+                        {
+                            mapRigPerImage[timestamp] = mapRigPerImage.size()-1;
+                        }
 
-                  //insert image in map timestamp -> subcam
-                  mapSubcamPerTimestamp[timestamp].push_back( *iter_image );
-                }
+                        //insert image in map timestamp -> subcam
+                        mapSubcamPerTimestamp[timestamp].push_back( *iter_image );
+                    }
 
-                // affect width and height
-                camInfo.width = width;
-                camInfo.height = height;
+                    // export camera infor
+                    camInformation   camInfo;
 
-                // Create list if focal is given
-                if( focalPixPermm > 0.0 )
-                {
-                  camInfo.focal = focalPixPermm ;
+                    computeImageIntrinsic(
+                        camInfo,
+                        vec_sensorData,
+                        timestamp,
+                        sensor_index,
+                        focalPixPermm,
+                        bUseCalibPrincipalPoint,
+                        bRigidRig);
 
-                  if(!bUseCalibPrincipalPoint)
-                  {
+                    //export info
+                    #pragma omp critical
+                    {
+                        camAndIntrinsics.insert(std::make_pair(*iter_image, camInfo));
+                    }
 
-                    camInfo.px0   = width / 2.0 ;
-                    camInfo.py0   = height / 2.0 ;
-                  }
-                  else
-                  {
-                    camInfo.px0   = vec_sensorData[sensor_index].lfpx0;
-                    camInfo.py0   = vec_sensorData[sensor_index].lfpy0;
-                  }
-                }
-                // Create list if full calibration data are used
-                else
-                {
-                  focalPix = vec_sensorData[sensor_index].lfFocalLength / vec_sensorData[sensor_index].lfPixelSize ;
-
-                  camInfo.focal = focalPix;
-                  camInfo.px0   = vec_sensorData[sensor_index].lfpx0;
-                  camInfo.py0   = vec_sensorData[sensor_index].lfpy0;
-                }
-
-                // if rigid rig, add some informations
-                if(bRigidRig)
-                {
-                  // export rig index
-                  camInfo.sRigName = timestamp;
-
-                  // export channel
-                  camInfo.subChan = sensor_index;
-
-                  // export rotation
-                  camInfo.R[0] = vec_sensorData[sensor_index].R[0] ;
-                  camInfo.R[1] = vec_sensorData[sensor_index].R[1] ;
-                  camInfo.R[2] = vec_sensorData[sensor_index].R[2] ;
-                  camInfo.R[3] = vec_sensorData[sensor_index].R[3] ;
-                  camInfo.R[4] = vec_sensorData[sensor_index].R[4] ;
-                  camInfo.R[5] = vec_sensorData[sensor_index].R[5] ;
-                  camInfo.R[6] = vec_sensorData[sensor_index].R[6] ;
-                  camInfo.R[7] = vec_sensorData[sensor_index].R[7] ;
-                  camInfo.R[8] = vec_sensorData[sensor_index].R[8] ;
-
-                  // export translation
-                  camInfo.C[0] = vec_sensorData[sensor_index].C[0] ;
-                  camInfo.C[1] = vec_sensorData[sensor_index].C[1] ;
-                  camInfo.C[2] = vec_sensorData[sensor_index].C[2] ;
                 };
 
-                //export info
+                //update progress bar
                 #pragma omp critical
-              {
-                camAndIntrinsics.insert(std::make_pair(*iter_image, camInfo));
-              }
-            };
+                {
+                    ++my_progress_bar_image;
+                }
 
-            //update progress bar
-            #pragma omp critical
-          {
-            ++my_progress_bar_image;
-          }
+            } //endif format known
 
-        }
+        }; // looop on vector image
 
         // check the number of subcamera per rig. Remove less representated rigs.
         li_Size_t   timeStamp = 0;

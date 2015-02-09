@@ -95,5 +95,20 @@ bool computeInstrinsicPerImages(
                       const bool & bUsePrincipalPoint,
                       const bool & bUseRigidRig );
 
+/*********************************************************************
+ *  compute image intrinsic parameter
+ *
+ *********************************************************************/
+
+void computeImageIntrinsic(
+                     camInformation & camInfo,
+                     const std::vector < sensorData > & vec_sensorData,
+                     const std::string & timestamp,
+                     const size_t   & sensor_index,
+                     const double   & focalPixPermm,
+                     const bool     & bUseCalibPrincipalPoint,
+                     const bool     & bRigidRig
+);
+
 
 #endif /* LIST_UTILS_HPP_ */
