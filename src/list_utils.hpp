@@ -143,6 +143,16 @@ bool  loadCalibrationData( std::vector< sensorData >  & vec_sensorData,
  *
  *********************************************************************/
 
+ /*! \brief Channel File parser
+ *
+ * This function parse channel file and create a list of suchannel to keep
+ *
+ * \param keptChan         List of kept channels
+ * \param sChannelFile     The complete path of channel file
+ *
+ * \return bool value that says if the loading was sucessfull or not
+ */
+
 void loadChannelFile( std::vector< li_Size_t >  & keptChan,
                     const std::string & sChannelFile );
 
@@ -151,6 +161,22 @@ void loadChannelFile( std::vector< li_Size_t >  & keptChan,
 *  compute camera and rig intrinsic parameters
 *
 *********************************************************************/
+
+/*! \brief Compute intrinsic needed by openMVG for each image
+*
+* This function parse image list and create the associated information needed by openMVG
+*
+* \param vec_image           Image list
+* \param vec_sensorData      Calibration data list
+* \param keptChan            List of kept channel
+* \param sImageDir           Directory containing the images
+* \param sOutputDir          Directory containing the lists.txt file
+* \param focalPixPermm       Focal length in pixel per mm
+* \param bUsePrincipalPoint  bool value indicating if we use (or not) principal point from calibration
+* \param bUSeRigidRig        bool value indicating if we use rig structure or not
+*
+* \return bool value that says if the loading was sucessfull or not
+*/
 
 bool computeInstrinsicPerImages(
                       std::vector<std::string> & vec_image,
@@ -166,6 +192,21 @@ bool computeInstrinsicPerImages(
  *  compute image intrinsic parameter
  *
  *********************************************************************/
+
+ /*! \brief Compute intrinsic needed by openMVG for a single image
+ *
+ * This function compute the information needed by openMVG for a single image
+ *
+ * \param camInfor            Strucutre containing all information needed by openMVG
+ * \param vec_sensorData      Calibration data list
+ * \param timestamp           Rig timestamp associated to image
+ * \param sensor_index        Subchannel number
+ * \param focalPixPermm       Focal length in pixel per mm
+ * \param bUsePrincipalPoint  bool value indicating if we use (or not) principal point from calibration
+ * \param bUSeRigidRig        bool value indicating if we use rig structure or not
+ *
+ * \return bool value that says if the loading was sucessfull or not
+ */
 
 void computeImageIntrinsic(
                      camInformation & camInfo,
@@ -183,6 +224,18 @@ void computeImageIntrinsic(
 *
 *********************************************************************/
 
+/*! \brief Analyze images and keep only most representative rig
+*
+* This function analyse image list and keep only images related to the
+* rig mostly represented. It create a set of image to remove
+*
+* \param imageToRemove            Set of image to remove
+* \param mapSubcamPerTimestamp    Mapping timestamp to associated images and subcameras
+* \param imageNumber              The number of input images
+*
+* \return bool value that says if the loading was sucessfull or not
+*/
+
 void keepRepresentativeRigs(
            std::set <string> & imageToRemove,
            const std::map<std::string, std::vector<string> > & mapSubcamPerTimestamp,
@@ -193,6 +246,19 @@ void keepRepresentativeRigs(
 *  write image list and intrinsic to file
 *
 *********************************************************************/
+
+/*! \brief Export calibration information to file lists.txt
+*
+* This function exported the calibration information to file lists.txt so
+* that openMVG could directly read it for the reconstruction
+*
+* \param imageToRemove       Set of image to remove
+* \param camAndIntrinsics    Set of pair (image name, image intrinsic)
+* \param listTXT             The stream that write the information to file lists.txt
+* \param bRigidRig           Use rigid rig or not for reconstruction
+*
+* \return bool value that says if the loading was sucessfull or not
+*/
 
 void exportToFile(
           const std::set <string> & imageToRemove,
