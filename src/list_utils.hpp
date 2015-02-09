@@ -43,6 +43,8 @@
 #include <fastcal-all.h>
 #include <types.hpp>
 #include <tools.hpp>
+#include <map>
+#include <set>
 
 using namespace std;
 
@@ -108,6 +110,18 @@ void computeImageIntrinsic(
                      const double   & focalPixPermm,
                      const bool     & bUseCalibPrincipalPoint,
                      const bool     & bRigidRig
+);
+
+
+/*********************************************************************
+*  keep only most representative rigs
+*
+*********************************************************************/
+
+void keepRepresentativeRigs(
+           std::set <string> & imageToRemove,
+           const std::map<std::string, std::vector<string> > & mapSubcamPerTimestamp,
+           const size_t imageNumber
 );
 
 
