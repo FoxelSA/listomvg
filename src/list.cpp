@@ -35,6 +35,37 @@
  *      Attribution" section of <http://foxel.ch/license>.
  */
 
+ /*! \file list.cpp
+ * \author Stephane Flotron <s.flotron@foxel.ch>
+ */
+ /*! \mainpage listomvg
+ * \section listomvg
+ *
+ * For Elphel's camera, generate file lists.txt needed by openMVG, for rigid rig and standard openMVG.
+ *
+ * \section Documentation
+ *
+ * Documentation can be consulted on the [wiki](https://github.com/FoxelSA/listomvg/wiki).
+ *
+ * \section Copyright
+ *
+ * Copyright (c) 2014-2015 FOXEL SA - [http://foxel.ch](http://foxel.ch)<br />
+ * This program is part of the FOXEL project <[http://foxel.ch](http://foxel.ch)>.
+ *
+ * Please read the [COPYRIGHT.md](COPYRIGHT.md) file for more information.
+ *
+ * \section License
+ *
+ * This program is licensed under the terms of the
+ * [GNU Affero General Public License v3](http://www.gnu.org/licenses/agpl.html)
+ * (GNU AGPL), with two additional terms. The content is licensed under the terms
+ * of the [Creative Commons Attribution-ShareAlike 4.0 International](http://creativecommons.org/licenses/by-sa/4.0/)
+ * (CC BY-SA) license.
+ *
+ * You must read <[http://foxel.ch/license](http://foxel.ch/license)> for more
+ *information about our Licensing terms and our Usage and Attribution guidelines.
+ *
+ */
 
 #include <tools.hpp>
 #include <types.hpp>
@@ -48,6 +79,29 @@
 #include "../lib/cmdLine/cmdLine.h"
 
 using namespace std;
+
+/*! \brief Main software function
+*
+* This function takes a sensor as input and load all calibration
+* needed for gnomonic projection.
+*
+* \param sImageDir      Path/directory containing images
+* \param smacAddress    Mac address of the elphel camera that take the photo
+* \param sOutputDir     Path/directory where you want the file lists.txt lies
+* \param sMountPoint    mount point of the camera folder
+* \param sChannelFile   Optionnal Argument. Path/name of the channel file containing the subcamera you want to keep
+*                       By default we keep all subcameras.
+* \param bRigidRig      Optionnal Argument. if 0, do not use rigid rig structure, if 1
+*                       use rigid rig structure. Default is 1.
+* \param focalPixPermm  Optionnal Argument. If passed to the programm, we will use the
+*                       focal given in input for all images. Warning, the focal should be in
+*                       pixels per mm.
+* \param bUseCalibPrincipalPoint Optionnal Argument. If 0, use the center of as principal point, if 1
+*                       use the principal point given by calibration process.
+*
+* \return 0 if all was well, 1 in other cases.
+*/
+
 
 int main(int argc, char **argv)
 {
@@ -160,5 +214,5 @@ int main(int argc, char **argv)
         }
 
     }
-    
+
 }
