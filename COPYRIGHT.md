@@ -1,7 +1,7 @@
 
 ## Copyright
 
-gnoproj - Gnomonic reprojection for equirectangular images from ElphelPHG cameras<br />
+listomvg - openMVG lists.txt input file generator software. <br />
 This program is part of the FOXEL project <[http://foxel.ch](http://foxel.ch)>.
 
 Copyright (c) 2013-2014 FOXEL SA - [http://foxel.ch](http://foxel.ch)<br />

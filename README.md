@@ -1,7 +1,7 @@
 
 ## listomvg
 
-For Elphel's camera, generate file lists.txt needed by openMVG, for rigid rig and standard openMVG.
+openMVG lists.txt input file generator software.
 
 ### Documentation
 
