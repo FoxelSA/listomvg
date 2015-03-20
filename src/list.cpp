@@ -111,7 +111,9 @@ int main(int argc, char **argv)
     sChannelFile = "",
     smacAddress = "",
     sOutputDir = "",
-    sMountPoint = "";
+    sMountPoint = "",
+    sTimestampLow= "",
+    sTimestampUp="";
 
   li_Real_t     focalPixPermm = -1.0;
   bool          bRigidRig     = true;
@@ -125,6 +127,8 @@ int main(int argc, char **argv)
   cmd.add( make_option('r', bRigidRig, "rigidRig") );
   cmd.add( make_option('p', bUseCalibPrincipalPoint, "useCalibPrincipalPoint") );
   cmd.add( make_option('f', focalPixPermm, "focal") );
+  cmd.add( make_option('a', sTimestampLow, "lowerBound") );
+  cmd.add( make_option('b', sTimestampUp, "upperBound") );
 
   try {
       if (argc == 1) throw std::string("Invalid command line parameter.");
@@ -132,16 +136,18 @@ int main(int argc, char **argv)
   } catch(const std::string& s) {
       std::cerr << "Usage: " << argv[0] << '\n'
       << "[-i|--imageDirectory]\n"
-      << "[-m]--macAddress\n"
+      << "[-m|--macAddress\n"
       << "[-o|--outputDirectory]\n"
-      << "[-d]--mountPoint]\n"
+      << "[-d|--mountPoint]\n"
       << "[-c|--channelFile]\n"
-      << "[-r]--rigidRig \n"
+      << "[-r|--rigidRig \n"
       << "   -r 0 : no rigid rig \n"
       << "   -r 1 : with rigid rig structure\n"
-      << "[-p]--useCalibPrincipalPoint\n"
+      << "[-p|--useCalibPrincipalPoint\n"
       << "   -p 0 : do not use calibration principal point \n"
       << "   -p 1 : use calibration principal point \n"
+      << "[-a|--lowerBound \n"
+      << "[-b|--upperBound \n"
       << "[-f|--focal] (pixels)\n"
       << std::endl;
 
@@ -160,7 +166,9 @@ int main(int argc, char **argv)
                                     sChannelFile,
                                     bRigidRig,
                                     bUseCalibPrincipalPoint,
-                                    focalPixPermm
+                                    focalPixPermm,
+                                    sTimestampLow,
+                                    sTimestampUp
                               );
    if( !bValidInput )
    {

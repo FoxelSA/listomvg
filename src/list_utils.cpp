@@ -68,7 +68,9 @@ bool isInputValid( const char*  softName,
                    const std::string& sChannelFile,
                    const bool & bRigidRig,
                    const bool & bUseCalibPrincipalPoint,
-                   const double & focalPixPermm )
+                   const double & focalPixPermm,
+                   const std::string& sTimestampLow,
+                   const std::string& sTimestampUp)
 {
 
     std::cout << " You called : " <<std::endl
@@ -80,7 +82,9 @@ bool isInputValid( const char*  softName,
               << "--channelFile " << sChannelFile << std::endl
               << "--rigidRig " << bRigidRig << std::endl
               << "--useCalibPrincipalPoint " << bUseCalibPrincipalPoint << std::endl
-              << "--focal " << focalPixPermm << std::endl;
+              << "--focal " << focalPixPermm << std::endl
+              << "--lowerBound " << sTimestampLow << std::endl
+              << "--upperBound " << sTimestampUp << std::endl;
 
     // check if image dir exists
     if ( !stlplus::folder_exists( sImageDir ) )

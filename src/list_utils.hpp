@@ -102,6 +102,8 @@ using namespace std;
 * \param bRigidRig      Bool value indicating if we use rig structure or not
 * \param bUseCalibPrincipalPoint   Bool value indicating if we use (or not) the principal point of calibration
 * \param focalPixPermm  the focal length in pixel per mm (optionnal argument)
+* \param sTimestampLow  Lower bound for timestamp value
+* \param sTimestampUp   Upper bound for timestampe value
 *
 * \return bool value that says if the arguments are valid or not
 */
@@ -114,7 +116,9 @@ bool isInputValid(  const char* softName,
                     const std::string& sChannelFile,
                     const bool & bRigidRig,
                     const bool & bUseCalibPrincipalPoint,
-                    const double & focalPixPermm );
+                    const double & focalPixPermm,
+                    const std::string& sTimestampLow,
+                    const std::string& sTimestampUp);
 
 /*********************************************************************
  *  load calibration data related to elphel cameras
