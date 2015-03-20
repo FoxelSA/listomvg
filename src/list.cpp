@@ -205,7 +205,9 @@ int main(int argc, char **argv)
                                    sOutputDir,
                                    focalPixPermm,
                                    bUseCalibPrincipalPoint,
-                                   bRigidRig );
+                                   bRigidRig,
+                                   sTimestampLow,
+                                   sTimestampUp);
 
             // do final check to ensure all went well
             if( isExported )

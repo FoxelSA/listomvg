@@ -84,6 +84,26 @@
 using namespace std;
 
 /*******************************************************************************
+* verify that given timestamp range is valid
+*
+********************************************************************************
+*/
+
+/*! \brief Check input data validity
+*
+* This function checks that given timestamp range is valid
+*
+* \param sTimestampLow  Lower bound for timestamp value
+* \param sTimestampUp   Upper bound for timestampe value
+*
+* \return bool value indicating if the timestamp range is valid or not
+*/
+
+bool isRangeValid(  const std::string& sTimestampLow,
+                    const std::string& sTimestampUp);
+
+
+/*******************************************************************************
 * verify that software argument are valid
 *
 ********************************************************************************
@@ -178,6 +198,8 @@ void loadChannelFile( std::vector< li_Size_t >  & keptChan,
 * \param focalPixPermm       Focal length in pixel per mm
 * \param bUsePrincipalPoint  bool value indicating if we use (or not) principal point from calibration
 * \param bUSeRigidRig        bool value indicating if we use rig structure or not
+* \param sTimestampLower     Lower bound for timestamp interval
+* \param sTimestampUpper     Upper bound for timestamp interval
 *
 * \return bool value telling if we have generated the file lists.txt
 */
@@ -190,7 +212,9 @@ bool computeInstrinsicPerImages(
                       const std::string & sOutputDir,
                       const double & focalPixPermm,
                       const bool & bUsePrincipalPoint,
-                      const bool & bUseRigidRig );
+                      const bool & bUseRigidRig,
+                      std::string& sTimestampLower,
+                      std::string& sTimestampUpper);
 
 /*********************************************************************
  *  compute image intrinsic parameter
@@ -236,6 +260,8 @@ void computeImageIntrinsic(
 * \param imageToRemove            Set of image to remove
 * \param mapSubcamPerTimestamp    Mapping timestamp to associated images and subcameras
 * \param imageNumber              The number of input images
+* \param sTimestampLower          Lower bound for timestamp interval
+* \param sTimestampUpper          Upper bound for timestamp interval
 *
 * \return The set of image not usable for reconstruction in set imageToRemove
 */
@@ -243,7 +269,9 @@ void computeImageIntrinsic(
 void keepRepresentativeRigs(
            std::set <string> & imageToRemove,
            const std::map<std::string, std::vector<string> > & mapSubcamPerTimestamp,
-           const size_t imageNumber
+           const size_t imageNumber,
+           const std::string& sTimestampLower,
+           const std::string& sTimestampUpper
 );
 
 /*********************************************************************
