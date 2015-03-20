@@ -97,14 +97,14 @@ bool isRangeValid(  const std::string& sTimestampLow,
       }
       else
       {
-          std::cerr << "Timestamp Upper bound is less than lower bound " << std::endl;
+          std::cerr << "\nTimestamp Upper bound is less than lower bound " << std::endl;
           return false;
       }
 
   }
   else
   {
-      std::cerr << "The provided timestamp are not in the right format " << std::endl;
+      std::cerr << "\nThe provided timestamp are not in the right format " << std::endl;
       return false;
   }
 
@@ -467,6 +467,13 @@ void keepRepresentativeRigs(
 
     }
 
+    // check timestamp range validity
+    bool validRange = isRangeValid(sTimestampLower, sTimestampUpper);
+    if( !validRange )
+    {
+        std::cerr << "\n[keepRepresentativeRigs::WARNING] openMVG will use all images, timestamp range is not valid " << std::endl;
+    }
+
     // remove rig not having the max occurrence subcam number
     for( k = 0 ; k < mapSubcamPerTimestamp.size(); ++k )
     {
@@ -476,8 +483,9 @@ void keepRepresentativeRigs(
 
         //update map
         if( iter_timestamp->second.size() != subCamNumber
-            || iter_timestamp->first < sTimestampLower
-            || iter_timestamp->first > sTimestampUpper )
+            || ( iter_timestamp->first < sTimestampLower && validRange )
+            || ( iter_timestamp->first > sTimestampUpper && validRange )
+          )
         {
             for( i  = 0 ; i < iter_timestamp->second.size() ; ++i )
             {
@@ -488,8 +496,8 @@ void keepRepresentativeRigs(
 
     std::cout << "\n\n Max rig occurence is " << max_Occurence
               << ", rig number of sub cameras is " << subCamNumber
-              << std::endl << std::endl;
-    std::cout << " OpenMVG will use " << max_Occurence * subCamNumber
+              << std::endl;
+    std::cout << " OpenMVG will use " << imageNumber - imageToRemove.size()
               << " of " << imageNumber << " input images "
               << std::endl << std::endl;
 
