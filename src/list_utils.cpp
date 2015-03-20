@@ -55,6 +55,62 @@
 using namespace std;
 
 /*******************************************************************************
+* verify that given timestamp range is valid
+*
+********************************************************************************
+*/
+
+/*! \brief Check input data validity
+*
+* This function checks that given timestamp range is valid
+*
+* \param sTimestampLow  Lower bound for timestamp value
+* \param sTimestampUp   Upper bound for timestampe value
+*
+* \return bool value indicating if the timestamp range is valid or not
+*/
+
+bool isRangeValid(  const std::string& sTimestampLow,
+                    const std::string& sTimestampUp)
+{
+
+  // split timestamp in order to check format
+  std::vector <std::string>  splitLow;
+  std::vector <std::string>  splitUp;
+
+  split( sTimestampLow, "_", splitLow );
+  split( sTimestampUp, "_", splitUp );
+
+  // check that the two timestamps are in the format 0123456789_012345
+  if(  splitLow.size() == 2
+       && splitUp.size() == 2
+       && splitLow[0].size() == 10
+       && splitLow[1].size() == 6
+       && splitUp[0].size()  == 10
+       && splitUp[1].size()  == 6
+    )
+  {
+      // check that lower bound is less than upper
+      if( sTimestampLow < sTimestampUp )
+      {
+          return true;
+      }
+      else
+      {
+          std::cerr << "\nTimestamp Upper bound is less than lower bound " << std::endl;
+          return false;
+      }
+
+  }
+  else
+  {
+      std::cerr << "\nThe provided timestamp are not in the right format " << std::endl;
+      return false;
+  }
+
+}
+
+/*******************************************************************************
 * verify that software argument are valid
 *
 ********************************************************************************
@@ -68,7 +124,9 @@ bool isInputValid( const char*  softName,
                    const std::string& sChannelFile,
                    const bool & bRigidRig,
                    const bool & bUseCalibPrincipalPoint,
-                   const double & focalPixPermm )
+                   const double & focalPixPermm,
+                   const std::string& sTimestampLow,
+                   const std::string& sTimestampUp)
 {
 
     std::cout << " You called : " <<std::endl
@@ -80,7 +138,9 @@ bool isInputValid( const char*  softName,
               << "--channelFile " << sChannelFile << std::endl
               << "--rigidRig " << bRigidRig << std::endl
               << "--useCalibPrincipalPoint " << bUseCalibPrincipalPoint << std::endl
-              << "--focal " << focalPixPermm << std::endl;
+              << "--focal " << focalPixPermm << std::endl
+              << "--lowerBound " << sTimestampLow << std::endl
+              << "--upperBound " << sTimestampUp << std::endl;
 
     // check if image dir exists
     if ( !stlplus::folder_exists( sImageDir ) )
@@ -353,7 +413,9 @@ void computeImageIntrinsic(
 void keepRepresentativeRigs(
           std::set <string> & imageToRemove,
           const std::map<std::string, std::vector<string> > & mapSubcamPerTimestamp,
-          const size_t imageNumber )
+          const size_t imageNumber,
+          const std::string& sTimestampLower,
+          const std::string& sTimestampUpper )
 {
     // check the number of subcamera per rig. Remove less representated rigs.
     li_Size_t   timeStamp = 0;
@@ -405,6 +467,13 @@ void keepRepresentativeRigs(
 
     }
 
+    // check timestamp range validity
+    bool validRange = isRangeValid(sTimestampLower, sTimestampUpper);
+    if( !validRange )
+    {
+        std::cerr << "\n[keepRepresentativeRigs::WARNING] openMVG will use all images, timestamp range is not valid " << std::endl;
+    }
+
     // remove rig not having the max occurrence subcam number
     for( k = 0 ; k < mapSubcamPerTimestamp.size(); ++k )
     {
@@ -413,7 +482,10 @@ void keepRepresentativeRigs(
         std::advance(iter_timestamp, k);
 
         //update map
-        if( iter_timestamp->second.size() != subCamNumber )
+        if( iter_timestamp->second.size() != subCamNumber
+            || ( iter_timestamp->first < sTimestampLower && validRange )
+            || ( iter_timestamp->first > sTimestampUpper && validRange )
+          )
         {
             for( i  = 0 ; i < iter_timestamp->second.size() ; ++i )
             {
@@ -424,8 +496,8 @@ void keepRepresentativeRigs(
 
     std::cout << "\n\n Max rig occurence is " << max_Occurence
               << ", rig number of sub cameras is " << subCamNumber
-              << std::endl << std::endl;
-    std::cout << " OpenMVG will use " << max_Occurence * subCamNumber
+              << std::endl;
+    std::cout << " OpenMVG will use " << imageNumber - imageToRemove.size()
               << " of " << imageNumber << " input images "
               << std::endl << std::endl;
 
@@ -531,7 +603,9 @@ bool computeInstrinsicPerImages(
               const std::string & sOutputDir,
               const double & focalPixPermm,
               const bool & bUseCalibPrincipalPoint,
-              const bool & bRigidRig )
+              const bool & bRigidRig,
+              std::string& sTimestampLower,
+              std::string& sTimestampUpper)
 {
     //initialize rig map
     std::map<std::string, li_Size_t>  mapRigPerImage;
@@ -556,6 +630,8 @@ bool computeInstrinsicPerImages(
         std::vector<string>     splitted_name;
         std::string             timestamp;
         std::string             sImageFilename;
+        std::string             minTimestamp="";
+        std::string             maxTimestamp="";
 
         li_Size_t sensor_index  = 0;
         li_Size_t i             = 0;
@@ -589,6 +665,26 @@ bool computeInstrinsicPerImages(
 
                 // now load image information and keep channel index and timestamp
                 timestamp=splitted_name[0];
+
+                // update min timestamp
+                if( minTimestamp.empty() )
+                {
+                    minTimestamp = timestamp;
+                }
+                else
+                {
+                    minTimestamp = std::min( minTimestamp, timestamp);
+                }
+
+                // update max timestamp
+                if( maxTimestamp.empty() )
+                {
+                    maxTimestamp = timestamp;
+                }
+                else
+                {
+                    maxTimestamp = std::max( maxTimestamp, timestamp);
+                }
 
                 // if no channel file is given, keep all images
                 bKeepChannel = false;
@@ -652,11 +748,19 @@ bool computeInstrinsicPerImages(
 
         }; // looop on vector image
 
+        if( sTimestampLower.empty() )
+            sTimestampLower = minTimestamp;
+
+        if( sTimestampUpper.empty() )
+            sTimestampUpper = maxTimestamp;
+
         // keep only most represented rig
         std::set < std::string >  imageToRemove;
         keepRepresentativeRigs( imageToRemove,
                                 mapSubcamPerTimestamp,
-                                camAndIntrinsics.size() );
+                                camAndIntrinsics.size(),
+                                sTimestampLower,
+                                sTimestampUpper);
 
         // export list to file
         exportToFile(   imageToRemove,
