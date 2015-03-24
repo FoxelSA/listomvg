@@ -666,24 +666,27 @@ bool computeInstrinsicPerImages(
                 // now load image information and keep channel index and timestamp
                 timestamp=splitted_name[0];
 
-                // update min timestamp
-                if( minTimestamp.empty() )
+                #pragma omp critical
                 {
-                    minTimestamp = timestamp;
-                }
-                else
-                {
-                    minTimestamp = std::min( minTimestamp, timestamp);
-                }
+                    // update min timestamp
+                    if( minTimestamp.empty() )
+                    {
+                        minTimestamp = timestamp;
+                    }
+                    else
+                    {
+                        minTimestamp = std::min( minTimestamp, timestamp);
+                    }
 
-                // update max timestamp
-                if( maxTimestamp.empty() )
-                {
-                    maxTimestamp = timestamp;
-                }
-                else
-                {
-                    maxTimestamp = std::max( maxTimestamp, timestamp);
+                    // update max timestamp
+                    if( maxTimestamp.empty() )
+                    {
+                        maxTimestamp = timestamp;
+                    }
+                    else
+                    {
+                        maxTimestamp = std::max( maxTimestamp, timestamp);
+                    }
                 }
 
                 // if no channel file is given, keep all images
