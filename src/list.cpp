@@ -70,6 +70,7 @@
 #include <tools.hpp>
 #include <types.hpp>
 #include <list_utils.hpp>
+#include <json.hpp>
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdlib.h>
@@ -113,7 +114,8 @@ int main(int argc, char **argv)
     sOutputDir = "",
     sMountPoint = "",
     sTimestampLow= "",
-    sTimestampUp="";
+    sTimestampUp="",
+    sGpsFileName="";
 
   li_Real_t     focalPixPermm = -1.0;
   bool          bRigidRig     = true;
@@ -129,6 +131,7 @@ int main(int argc, char **argv)
   cmd.add( make_option('f', focalPixPermm, "focal") );
   cmd.add( make_option('a', sTimestampLow, "lowerBound") );
   cmd.add( make_option('b', sTimestampUp, "upperBound") );
+  cmd.add( make_option('g', sGpsFileName, "gps"));
 
   try {
       if (argc == 1) throw std::string("Invalid command line parameter.");
@@ -149,6 +152,7 @@ int main(int argc, char **argv)
       << "[-a|--lowerBound \n"
       << "[-b|--upperBound \n"
       << "[-f|--focal] (pixels)\n"
+      << "[-g|--gps] GPU/IMU json file\n"
       << std::endl;
 
       std::cerr << s << std::endl;
@@ -208,6 +212,10 @@ int main(int argc, char **argv)
                                    bRigidRig,
                                    sTimestampLow,
                                    sTimestampUp);
+
+            //load json file
+            SfM_Gps_Data  loaded_GPS_Data;
+            Load_gpsimu_cereal( loaded_GPS_Data, sGpsFileName );
 
             // do final check to ensure all went well
             if( isExported )

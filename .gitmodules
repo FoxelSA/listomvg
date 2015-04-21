@@ -1,3 +1,6 @@
 [submodule "lib/libfastcal"]
 	path = lib/libfastcal
 	url = https://github.com/FoxelSA/libfastcal.git
+[submodule "lib/openMVG"]
+	path = lib/openMVG
+	url = https://github.com/openMVG/openMVG.git

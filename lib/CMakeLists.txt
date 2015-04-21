@@ -3,4 +3,4 @@
 #---------------------
 
 # Basic filesystem utils
-ADD_SUBDIRECTORY(stlplus3)
+ADD_SUBDIRECTORY(openMVG)

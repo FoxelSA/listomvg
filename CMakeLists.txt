@@ -41,33 +41,15 @@ cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 
 project(listomvg C CXX)
 
-# ==============================================================================
-#  C / C++ flags
-# ==============================================================================
-set(CMAKE_CXX_COMPILER g++)
-set(CMAKE_BUILD_TYPE Debug)
-
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
-    "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set(warnings "-Wall -Wextra -pedantic")
-    set(cxx_flags "-std=c++11")
-endif()
-
-if (NOT CONFIGURED_ONCE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${warnings} ${cxx_flags}"
-        CACHE STRING "Flags used by the compiler during all build types." FORCE)
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${warnings}"
-        CACHE STRING "Flags used by the compiler during all build types." FORCE)
-endif()
-
 set(LISTOMVG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+add_definitions(-std=c++11)
 
 # ==============================================================================
 # add a target to generate API documentation with Doxygen
 # ===============================================================================
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
-  add_custom_target(doc
+  add_custom_target(doxy
         ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Generating API documentation with Doxygen" VERBATIM
@@ -111,19 +93,12 @@ set(LIBFASTCAL_LIBS ${CMAKE_CURRENT_SOURCE_DIR}/lib/libfastcal/bin/libfastcal.a)
 # ------------------------------------------------------------------------------
 # stlplus
 # ------------------------------------------------------------------------------
-add_custom_target(
-  stlplus
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/stlplus3/
-  COMMAND cmake .
-  COMMAND make
-)
-
-set(LIBSTL_LIBS ${CMAKE_CURRENT_SOURCE_DIR}/lib/stlplus3/libstlplus.a)
+add_subdirectory(lib)
 
 # ==============================================================================
 # Include directories
 # ==============================================================================
-include_directories(
+SET(LISTOMVG_INCLUDES
   ${LISTOMVG_SOURCE_DIR}
   ${LIBFASTCAL_INCLUDE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/lib/cmdLine
@@ -131,13 +106,15 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/lib/stlplus3/filesystemSimplified/
 )
 
+include_directories(${OpenMVG_INCLUDES} ${LISTOMVG_INCLUDES})
+
 # ==============================================================================
 # Library list
 # ==============================================================================
 set(LISTOMVG_LIBRARY_LIST
   ${LIBFASTCAL_LIBS}
   ${OpenCV_LIBS}
-  ${LIBSTL_LIBS}
+  ${OpenMVG_LIBS}
   ${LISTOMVG_LIBRARY_DEPENDENCIES}
 )
 
