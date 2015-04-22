@@ -37,7 +37,6 @@
  */
 
 #include <fastcal-all.h>
-#include <types.hpp>
 #include <tools.hpp>
 #include <list_utils.hpp>
 #include <cstring>
@@ -51,6 +50,7 @@
 #include <stdlib.h>
 #include "progress.hpp"
 #include "json.hpp"
+#include <openMVG/sfm/sfm.hpp>
 #include "../lib/stlplus3/filesystemSimplified/file_system.hpp"
 
 using namespace std;
@@ -652,7 +652,7 @@ bool computeInstrinsicPerImages(
             sImageFilename = stlplus::create_filespec( sImageDir, *iter_image );
 
             // Test if the image format is supported:
-            if (GetFormat(sImageFilename.c_str()) == Unknown)
+            if (openMVG::GetFormat(sImageFilename.c_str()) == openMVG::Unknown)
             {
                 std::cerr << " Warning : image " << sImageFilename << "\'s format is not supported." << std::endl;
             }
@@ -845,7 +845,7 @@ bool computeInstrinsicGPSPerImages(
             sImageFilename = stlplus::create_filespec( sImageDir, *iter_image );
 
             // Test if the image format is supported:
-            if (GetFormat(sImageFilename.c_str()) == Unknown)
+            if (openMVG::GetFormat(sImageFilename.c_str()) == openMVG::Unknown)
             {
                 std::cerr << " Warning : image " << sImageFilename << "\'s format is not supported." << std::endl;
             }
@@ -963,12 +963,83 @@ bool computeInstrinsicGPSPerImages(
         SfM_Gps_Data  loaded_GPS_Data;
         Load_gpsimu_cereal( loaded_GPS_Data, sGpsFile );
 
+        // create R/C map per timestamp
+        std::map < std::string, Mat3 >  map_rotationPerTimestamp;
+        std::map < std::string, Vec3 >  map_translationPerTimestamp;
+
+        create_gps_imu_map( loaded_GPS_Data,
+                            map_rotationPerTimestamp,
+                            map_translationPerTimestamp );
+
+        //now create openMVG camera views on remaing rigs
+        SfM_Data   sfm_data;
+        sfm_data.s_root_path = sImageDir;
+        std::map < size_t, size_t > map_intrinsicIdPerCamId;
+        size_t     cpt=0;
+
+        std::cout << "map_rotation.size " << map_rotationPerTimestamp.size() << std::endl;
+
+        for( std::set<imageNameAndIntrinsic>::const_iterator iter=camAndIntrinsics.begin();
+             iter != camAndIntrinsics.end(); ++iter, ++cpt)
+        {
+            // extract camera information
+            camInformation    cam = iter->second;
+            std::string  img_name = iter->first;
+
+            // extract informations relative to image (timestamp, subcam rotation and optical center)
+            std::string  timestamp = cam.sRigName;
+            const size_t      camI = cam.subChan;
+            const Mat3 Rc(cam.R);
+            const Vec3 Cc(cam.C);
+
+            // update intrinsic ID map
+            const size_t  intrinsicID = map_intrinsicIdPerCamId.size();
+            if( map_intrinsicIdPerCamId.find(camI) == map_intrinsicIdPerCamId.end())
+            {
+              map_intrinsicIdPerCamId[camI] = intrinsicID;
+            }
+
+            //now extract rig pose
+            Mat3 Rr = Mat3::Identity();
+            Vec3 Cr = Vec3::Zero();
+
+            if( map_rotationPerTimestamp.find(timestamp) != map_rotationPerTimestamp.end() )
+            {
+                Rr = map_rotationPerTimestamp.at(timestamp);
+            }
+
+            if( map_translationPerTimestamp.find(timestamp) != map_translationPerTimestamp.end() )
+            {
+                Cr = map_translationPerTimestamp.at(timestamp);
+            }
+
+            // and finally compute camera pose
+            const Mat3  R = Rc * Rr ;
+            const Vec3  C = Cr + Rr.transpose() * Cc ;
+
+            // update views / pose map
+            const size_t  focal_id = map_intrinsicIdPerCamId[camI];
+            sfm_data.views[cpt] = std::make_shared<View>(img_name, cpt, focal_id, cpt, cam.width, cam.height);
+            sfm_data.intrinsics[focal_id] = std::make_shared<Pinhole_Intrinsic> (cam.width, cam.height, cam.focal, cam.px0, cam.py0 );
+            sfm_data.poses[cpt] = Pose3(Rr,Cr);
+
+        }
 
         // export list to file
         exportToFile(   imageToRemove,
                         camAndIntrinsics,
                         listTXT,
                         bUseRigidRig );
+
+        // Store SfM_Data views & intrinsic data
+        if (Save(
+          sfm_data,
+          stlplus::create_filespec( sOutputDir, "sfm_data.json" ).c_str(),
+          ESfM_Data(VIEWS|INTRINSICS|EXTRINSICS))
+          )
+        return true;
+          else
+        return false;
 
     }
     else

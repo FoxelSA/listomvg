@@ -104,6 +104,10 @@ SET(LISTOMVG_INCLUDES
   ${CMAKE_CURRENT_SOURCE_DIR}/lib/cmdLine
   ${CMAKE_CURRENT_SOURCE_DIR}/lib/stlAddition
   ${CMAKE_CURRENT_SOURCE_DIR}/lib/stlplus3/filesystemSimplified/
+  ${CMAKE_CURRENT_SOURCE_DIR}/lib/openMVG/src/dependencies/osi_clp/CoinUtils/src/
+  ${CMAKE_CURRENT_SOURCE_DIR}/lib/openMVG/src/dependencies/osi_clp/Clp/src/
+  ${CMAKE_CURRENT_SOURCE_DIR}/lib/openMVG/src/dependencies/osi_clp/Osi/src/Osi/
+  ${CMAKE_CURRENT_SOURCE_DIR}/lib/openMVG/src/dependencies/osi_clp/Clp/src/OsiClp/
 )
 
 include_directories(${OpenMVG_INCLUDES} ${LISTOMVG_INCLUDES})

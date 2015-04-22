@@ -207,12 +207,14 @@ bool Load_gpsimu_cereal( SfM_Gps_Data & data,
 
 // create map timstamp -> rotation / gps informations
 bool create_gps_imu_map( SfM_Gps_Data & data,
-                         std::map < std::string, Mat3 >  map_rotationPerTimestamp,
-                         std::map < std::string, Vec3 >  map_translationPerTimestamp )
+                         std::map < std::string, Mat3 > & map_rotationPerTimestamp,
+                         std::map < std::string, Vec3 > & map_translationPerTimestamp )
 {
   // geodetic data
   const  double a = 6378137.0;  // earth half big axes
   const  double e = 0.081819190842622; //  earth excentricity
+
+  Vec3  CI=Vec3::Zero();
 
   //parse gps data set
   for( size_t i = 0 ; i < data.gpsData.size() ; ++i )
@@ -221,7 +223,11 @@ bool create_gps_imu_map( SfM_Gps_Data & data,
       pose  rigI  = data.gpsData[i];
 
       // create timestamp
-      std::string   timestamp = std::to_string(rigI.sec) + "_" + std::to_string(rigI.usec);
+      ostringstream  os;
+      os << std::setw(6) << std::setfill('0') << rigI.usec;
+
+      std::string   timestamp = std::to_string(rigI.sec) + "_" + os.str();
+      std::cout << timestamp << std::endl;
 
       //extract rotation information
       std::vector <double>  rigR = rigI.orientation;
@@ -245,12 +251,12 @@ bool create_gps_imu_map( SfM_Gps_Data & data,
           const Mat3 Rf = Rx * R ;
 
           //update map
-          map_rotationPerTimestamp.insert(std::make_pair( timestamp, Rf) );
+          map_rotationPerTimestamp[timestamp] = Rf;
       }
 
       // extract gps informations and convert it into euclidian coordinate
       std::vector <double>  gps = rigI.position;
-      if( rigR.size() == 4) // if we have gps informations
+      if( gps.size() == 4) // if we have gps informations
       {
           // load gps informations
           const double  hmes   = gps[0];
@@ -269,20 +275,12 @@ bool create_gps_imu_map( SfM_Gps_Data & data,
           Vec3 C = Vec3::Zero();
           C << x, y, z;
 
+          if( map_translationPerTimestamp.size() == 0 )
+              CI = C;
+
           //update map
-          map_translationPerTimestamp.insert(std::make_pair( timestamp, C) );
-
+          map_translationPerTimestamp[timestamp] =  C-CI;
       }
-  }
-
-  // shift position map
-  std::map < std::string, Vec3 >::const_iterator  init_pos = map_translationPerTimestamp.begin();
-
-  for(std::map< std::string, Vec3 >::iterator  iter = map_translationPerTimestamp.begin();
-      iter != map_translationPerTimestamp.end(); ++iter)
-  {
-      // shit position by initial position
-      iter->second = iter->second - init_pos->second;
   }
 
   // if we could create map, return true else return false
