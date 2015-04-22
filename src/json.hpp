@@ -210,6 +210,10 @@ bool create_gps_imu_map( SfM_Gps_Data & data,
                          std::map < std::string, Mat3 >  map_rotationPerTimestamp,
                          std::map < std::string, Vec3 >  map_translationPerTimestamp )
 {
+  // geodetic data
+  const  double a = 6378137.0;  // earth half big axes
+  const  double e = 0.081819190842622; //  earth excentricity
+
   //parse gps data set
   for( size_t i = 0 ; i < data.gpsData.size() ; ++i )
   {
@@ -232,10 +236,43 @@ bool create_gps_imu_map( SfM_Gps_Data & data,
                 R(k,l) = rigR[3*k+l];
           }
 
+          // update R to be in eyesis referential
+          Mat3  Rx = Mat3::Zero();
+          Rx(0,0) = 1.0;
+          Rx(1,2) = 1.0;
+          Rx(2,1) = -1.0;
+
+          const Mat3 Rf = Rx * R ;
+
           //update map
-          map_rotationPerTimestamp.insert(std::make_pair( timestamp, R) );
+          map_rotationPerTimestamp.insert(std::make_pair( timestamp, Rf) );
       }
 
+      // extract gps informations and convert it into euclidian coordinate
+      std::vector <double>  gps = rigI.position;
+      if( rigR.size() == 4) // if we have gps informations
+      {
+          // load gps informations
+          const double  hmes   = gps[0];
+          const double  lambda = gps[1] * M_PI / 180.0 ;
+          const double  phi    = gps[2] * M_PI / 180.0 ;
+
+          // convert it into euclidian
+          const double  nl =  a / sqrt( 1.0 - pow(e * sin(phi), 2) );
+          const double  Rn = hmes + nl;
+
+          const double  z = Rn;
+          const double  x = Rn * lambda ;
+          const double  y = Rn * phi ;
+
+          // export position in map
+          Vec3 C = Vec3::Zero();
+          C << x, y, z;
+
+          //update map
+          map_translationPerTimestamp.insert(std::make_pair( timestamp, C) );
+
+      }
   }
 
   return true;
