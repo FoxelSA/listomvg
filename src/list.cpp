@@ -70,7 +70,6 @@
 #include <tools.hpp>
 #include <types.hpp>
 #include <list_utils.hpp>
-#include <json.hpp>
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdlib.h>
@@ -200,22 +199,40 @@ int main(int argc, char **argv)
            std::vector< li_Size_t > keptChan;
            loadChannelFile( keptChan, sChannelFile );
 
-           //create and export list to folder
-           bool isExported =  computeInstrinsicPerImages(
-                                   vec_image,
-                                   vec_sensorData,
-                                   keptChan,
-                                   sImageDir,
-                                   sOutputDir,
-                                   focalPixPermm,
-                                   bUseCalibPrincipalPoint,
-                                   bRigidRig,
-                                   sTimestampLow,
-                                   sTimestampUp);
+           bool isExported = false;
 
-            //load json file
-            SfM_Gps_Data  loaded_GPS_Data;
-            Load_gpsimu_cereal( loaded_GPS_Data, sGpsFileName );
+           if( sGpsFileName.empty())
+           {
+               //create and export list to folder
+               isExported =  computeInstrinsicPerImages(
+                                       vec_image,
+                                       vec_sensorData,
+                                       keptChan,
+                                       sImageDir,
+                                       sOutputDir,
+                                       focalPixPermm,
+                                       bUseCalibPrincipalPoint,
+                                       bRigidRig,
+                                       sTimestampLow,
+                                       sTimestampUp);
+            }
+            else
+            {
+              //create and export list to folder
+              isExported =  computeInstrinsicGPSPerImages(
+                                      vec_image,
+                                      vec_sensorData,
+                                      keptChan,
+                                      sImageDir,
+                                      sOutputDir,
+                                      sGpsFileName,
+                                      focalPixPermm,
+                                      bUseCalibPrincipalPoint,
+                                      bRigidRig,
+                                      sTimestampLow,
+                                      sTimestampUp);
+
+            }
 
             // do final check to ensure all went well
             if( isExported )

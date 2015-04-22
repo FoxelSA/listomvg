@@ -50,6 +50,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include "progress.hpp"
+#include "json.hpp"
 #include "../lib/stlplus3/filesystemSimplified/file_system.hpp"
 
 using namespace std;
@@ -770,6 +771,204 @@ bool computeInstrinsicPerImages(
                         camAndIntrinsics,
                         listTXT,
                         bRigidRig );
+
+    }
+    else
+    {
+        return false;
+    }
+
+    listTXT.close();
+    return true;
+
+}
+
+/*********************************************************************
+*  compute camera and rig intrinsic parameters and camera poses using GPS / imu infos
+*
+*********************************************************************/
+
+bool computeInstrinsicGPSPerImages(
+            std::vector<std::string> & vec_image,
+            const std::vector< sensorData > & vec_sensorData,
+            const std::vector< li_Size_t >  & keptChan,
+            const std::string & sImageDir,
+            const std::string & sOutputDir,
+            const std::string & sGpsFile,
+            const double & focalPixPermm,
+            const bool & bUsePrincipalPoint,
+            const bool & bUseRigidRig,
+            std::string& sTimestampLower,
+            std::string& sTimestampUpper)
+{
+    //initialize rig map
+    std::map<std::string, li_Size_t>  mapRigPerImage;
+
+    // Write the new file
+    std::ofstream listTXT( stlplus::create_filespec( sOutputDir,"lists.txt" ).c_str() );
+
+    if ( listTXT )
+    {
+        std::sort(vec_image.begin(), vec_image.end());
+
+        // create output
+        std::set<imageNameAndIntrinsic> camAndIntrinsics;
+
+        C_Progress_display my_progress_bar_image( vec_image.size(),
+        std::cout, "\n List computation progession:\n");
+
+        // declare variable before loop
+        std::vector<std::string>::const_iterator iter_image = vec_image.begin();
+        std::pair< std::map<std::string, li_Size_t>::iterator, bool > ret;
+        std::map<std::string, std::vector<string> >  mapSubcamPerTimestamp;
+        std::vector<string>     splitted_name;
+        std::string             timestamp;
+        std::string             sImageFilename;
+        std::string             minTimestamp="";
+        std::string             maxTimestamp="";
+
+        li_Size_t sensor_index  = 0;
+        li_Size_t i             = 0;
+        li_Size_t idx           = 0;
+        bool      bKeepChannel  = false;
+
+        // do a parallel loop to improve CPU TIME
+        #pragma omp parallel firstprivate(iter_image, splitted_name, timestamp, sensor_index, i, bKeepChannel, sImageFilename )
+        #pragma omp for schedule(dynamic)
+        for ( idx = 0; idx < vec_image.size(); ++idx)
+        {
+            //advance iterator
+            iter_image = vec_image.begin();
+            std::advance(iter_image, idx);
+
+            // Read meta data to fill width height and focalPixPermm
+            sImageFilename = stlplus::create_filespec( sImageDir, *iter_image );
+
+            // Test if the image format is supported:
+            if (GetFormat(sImageFilename.c_str()) == Unknown)
+            {
+                std::cerr << " Warning : image " << sImageFilename << "\'s format is not supported." << std::endl;
+            }
+            else
+            {
+                // extract channel information from image name
+                splitted_name.clear();
+
+                split( *iter_image, "-", splitted_name );
+                sensor_index=atoi(splitted_name[1].c_str());
+
+                // now load image information and keep channel index and timestamp
+                timestamp=splitted_name[0];
+
+                #pragma omp critical
+                {
+                    // update min timestamp
+                    if( minTimestamp.empty() )
+                    {
+                        minTimestamp = timestamp;
+                    }
+                    else
+                    {
+                        minTimestamp = std::min( minTimestamp, timestamp);
+                    }
+
+                    // update max timestamp
+                    if( maxTimestamp.empty() )
+                    {
+                        maxTimestamp = timestamp;
+                    }
+                    else
+                    {
+                        maxTimestamp = std::max( maxTimestamp, timestamp);
+                    }
+                }
+
+                // if no channel file is given, keep all images
+                bKeepChannel = false;
+
+                if( keptChan.empty() )
+                {
+                    bKeepChannel = true ;
+                }
+                else
+                {
+                    for( i = 0 ; i < keptChan.size() ; ++i )
+                    {
+                        if( sensor_index == keptChan[i] )
+                            bKeepChannel = true;
+                    }
+                }
+
+                // export only kept channel
+                if( bKeepChannel )
+                {
+                    #pragma omp critical
+                    {
+                        // insert timestamp in the map
+                        ret = mapRigPerImage.insert ( std::pair<std::string, li_Size_t>(timestamp, mapRigPerImage.size()) );
+                        if(ret.second == true )
+                        {
+                            mapRigPerImage[timestamp] = mapRigPerImage.size()-1;
+                        }
+
+                        //insert image in map timestamp -> subcam
+                        mapSubcamPerTimestamp[timestamp].push_back( *iter_image );
+                    }
+
+                    // export camera infor
+                    camInformation   camInfo;
+
+                    computeImageIntrinsic(
+                        camInfo,
+                        vec_sensorData,
+                        timestamp,
+                        sensor_index,
+                        focalPixPermm,
+                        bUsePrincipalPoint,
+                        bUseRigidRig);
+
+                    //export info
+                    #pragma omp critical
+                    {
+                        camAndIntrinsics.insert(std::make_pair(*iter_image, camInfo));
+                    }
+
+                };
+
+                //update progress bar
+                #pragma omp critical
+                {
+                    ++my_progress_bar_image;
+                }
+
+            } //endif format known
+
+        }; // looop on vector image
+
+        if( sTimestampLower.empty() )
+            sTimestampLower = minTimestamp;
+
+        if( sTimestampUpper.empty() )
+            sTimestampUpper = maxTimestamp;
+
+        // keep only most represented rig
+        std::set < std::string >  imageToRemove;
+        keepRepresentativeRigs( imageToRemove,
+                                mapSubcamPerTimestamp,
+                                camAndIntrinsics.size(),
+                                sTimestampLower,
+                                sTimestampUpper);
+
+        //load json file
+        SfM_Gps_Data  loaded_GPS_Data;
+        Load_gpsimu_cereal( loaded_GPS_Data, sGpsFile );
+
+
+        // export list to file
+        exportToFile(   imageToRemove,
+                        camAndIntrinsics,
+                        listTXT,
+                        bUseRigidRig );
 
     }
     else
