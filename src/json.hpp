@@ -227,7 +227,6 @@ bool create_gps_imu_map( SfM_Gps_Data & data,
       os << std::setw(6) << std::setfill('0') << rigI.usec;
 
       std::string   timestamp = std::to_string(rigI.sec) + "_" + os.str();
-      std::cout << timestamp << std::endl;
 
       //extract rotation information
       std::vector <double>  rigR = rigI.orientation;
@@ -243,12 +242,12 @@ bool create_gps_imu_map( SfM_Gps_Data & data,
           }
 
           // update R to be in eyesis referential
-          Mat3  Rx = Mat3::Zero();
-          Rx(0,0) = 1.0;
-          Rx(1,2) = 1.0;
-          Rx(2,1) = -1.0;
+          Mat3  Rz = Mat3::Zero();
+          Rz(0,1) = -1.0;
+          Rz(1,0) = 1.0;
+          Rz(2,2) = 1.0;
 
-          const Mat3 Rf = Rx * R ;
+          const Mat3 Rf = Rz * R ;
 
           //update map
           map_rotationPerTimestamp[timestamp] = Rf;

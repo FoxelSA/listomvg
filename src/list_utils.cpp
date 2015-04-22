@@ -977,8 +977,6 @@ bool computeInstrinsicGPSPerImages(
         std::map < size_t, size_t > map_intrinsicIdPerCamId;
         size_t     cpt=0;
 
-        std::cout << "map_rotation.size " << map_rotationPerTimestamp.size() << std::endl;
-
         for( std::set<imageNameAndIntrinsic>::const_iterator iter=camAndIntrinsics.begin();
              iter != camAndIntrinsics.end(); ++iter, ++cpt)
         {
@@ -1021,7 +1019,7 @@ bool computeInstrinsicGPSPerImages(
             const size_t  focal_id = map_intrinsicIdPerCamId[camI];
             sfm_data.views[cpt] = std::make_shared<View>(img_name, cpt, focal_id, cpt, cam.width, cam.height);
             sfm_data.intrinsics[focal_id] = std::make_shared<Pinhole_Intrinsic> (cam.width, cam.height, cam.focal, cam.px0, cam.py0 );
-            sfm_data.poses[cpt] = Pose3(Rr,Cr);
+            sfm_data.poses[cpt] = Pose3(R,C);
 
         }
 
