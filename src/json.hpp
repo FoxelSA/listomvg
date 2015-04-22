@@ -275,7 +275,22 @@ bool create_gps_imu_map( SfM_Gps_Data & data,
       }
   }
 
-  return true;
+  // shift position map
+  std::map < std::string, Vec3 >::const_iterator  init_pos = map_translationPerTimestamp.begin();
+
+  for(std::map< std::string, Vec3 >::iterator  iter = map_translationPerTimestamp.begin();
+      iter != map_translationPerTimestamp.end(); ++iter)
+  {
+      // shit position by initial position
+      iter->second = iter->second - init_pos->second;
+  }
+
+  // if we could create map, return true else return false
+  if ( map_translationPerTimestamp.size() > 0 || map_rotationPerTimestamp.size() > 0 )
+      return true;
+  else
+      return false;
+
 };
 
 #endif
