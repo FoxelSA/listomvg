@@ -977,49 +977,57 @@ bool computeInstrinsicGPSPerImages(
         std::map < size_t, size_t > map_intrinsicIdPerCamId;
         size_t     cpt=0;
 
+        // use only complete rigs
+        std::set<std::string>::iterator  it = imageToRemove.end();
+
         for( std::set<imageNameAndIntrinsic>::const_iterator iter=camAndIntrinsics.begin();
              iter != camAndIntrinsics.end(); ++iter, ++cpt)
         {
-            // extract camera information
-            camInformation    cam = iter->second;
-            std::string  img_name = iter->first;
+          // check if we have to keep this timestamp
+          it=imageToRemove.find(iter->first);
+          if ( it == imageToRemove.end() )
+          {
+              // extract camera information
+              camInformation    cam = iter->second;
+              std::string  img_name = iter->first;
 
-            // extract informations relative to image (timestamp, subcam rotation and optical center)
-            std::string  timestamp = cam.sRigName;
-            const size_t      camI = cam.subChan;
-            const Mat3 Rc(cam.R);
-            const Vec3 Cc(cam.C);
+              // extract informations relative to image (timestamp, subcam rotation and optical center)
+              std::string  timestamp = cam.sRigName;
+              const size_t      camI = cam.subChan;
+              const Mat3 Rc(cam.R);
+              const Vec3 Cc(cam.C);
 
-            // update intrinsic ID map
-            const size_t  intrinsicID = map_intrinsicIdPerCamId.size();
-            if( map_intrinsicIdPerCamId.find(camI) == map_intrinsicIdPerCamId.end())
-            {
-              map_intrinsicIdPerCamId[camI] = intrinsicID;
-            }
+              // update intrinsic ID map
+              const size_t  intrinsicID = map_intrinsicIdPerCamId.size();
+              if( map_intrinsicIdPerCamId.find(camI) == map_intrinsicIdPerCamId.end())
+              {
+                map_intrinsicIdPerCamId[camI] = intrinsicID;
+              }
 
-            //now extract rig pose
-            Mat3 Rr = Mat3::Identity();
-            Vec3 Cr = Vec3::Zero();
+              //now extract rig pose
+              Mat3 Rr = Mat3::Identity();
+              Vec3 Cr = Vec3::Zero();
 
-            if( map_rotationPerTimestamp.find(timestamp) != map_rotationPerTimestamp.end() )
-            {
-                Rr = map_rotationPerTimestamp.at(timestamp);
-            }
+              if( map_rotationPerTimestamp.find(timestamp) != map_rotationPerTimestamp.end() )
+              {
+                  Rr = map_rotationPerTimestamp.at(timestamp);
+              }
 
-            if( map_translationPerTimestamp.find(timestamp) != map_translationPerTimestamp.end() )
-            {
-                Cr = map_translationPerTimestamp.at(timestamp);
-            }
+              if( map_translationPerTimestamp.find(timestamp) != map_translationPerTimestamp.end() )
+              {
+                  Cr = map_translationPerTimestamp.at(timestamp);
+              }
 
-            // and finally compute camera pose
-            const Mat3  R = Rc * Rr ;
-            const Vec3  C = Cr + Rr.transpose() * Cc ;
+              // and finally compute camera pose
+              const Mat3  R = Rc.transpose() * Rr ;
+              const Vec3  C = Cr + Rr.transpose() * Cc ;
 
-            // update views / pose map
-            const size_t  focal_id = map_intrinsicIdPerCamId[camI];
-            sfm_data.views[cpt] = std::make_shared<View>(img_name, cpt, focal_id, cpt, cam.width, cam.height);
-            sfm_data.intrinsics[focal_id] = std::make_shared<Pinhole_Intrinsic> (cam.width, cam.height, cam.focal, cam.px0, cam.py0 );
-            sfm_data.poses[cpt] = Pose3(R,C);
+              // update views / pose map
+              const size_t  focal_id = map_intrinsicIdPerCamId[camI];
+              sfm_data.views[cpt] = std::make_shared<View>(img_name, cpt, focal_id, cpt, cam.width, cam.height);
+              sfm_data.intrinsics[focal_id] = std::make_shared<Pinhole_Intrinsic> (cam.width, cam.height, cam.focal, cam.px0, cam.py0 );
+              sfm_data.poses[cpt] = Pose3(R,C);
+          }
 
         }
 

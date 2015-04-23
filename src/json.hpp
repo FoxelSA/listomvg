@@ -215,6 +215,7 @@ bool create_gps_imu_map( SfM_Gps_Data & data,
   const  double e = 0.081819190842622; //  earth excentricity
 
   Vec3  CI=Vec3::Zero();
+  Mat3  RI=Mat3::Zero();
 
   //parse gps data set
   for( size_t i = 0 ; i < data.gpsData.size() ; ++i )
@@ -241,13 +242,16 @@ bool create_gps_imu_map( SfM_Gps_Data & data,
                 R(k,l) = rigR[3*k+l];
           }
 
-          // update R to be in eyesis referential
-          Mat3  Rz = Mat3::Zero();
-          Rz(0,1) = -1.0;
-          Rz(1,0) = 1.0;
-          Rz(2,2) = 1.0;
+          if( map_rotationPerTimestamp.size() == 0 )
+              RI = R;
 
-          const Mat3 Rf = Rz * R ;
+          // update R to be in eyesis referential
+          Mat3  Rx = Mat3::Zero();
+          Rx(2,1) = 1.0;
+          Rx(1,2) = -1.0;
+          Rx(0,0) = 1.0;
+
+          const Mat3 Rf = Rx * R;
 
           //update map
           map_rotationPerTimestamp[timestamp] = Rf;
