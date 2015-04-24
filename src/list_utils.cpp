@@ -981,7 +981,7 @@ bool computeInstrinsicGPSPerImages(
         std::set<std::string>::iterator  it = imageToRemove.end();
 
         for( std::set<imageNameAndIntrinsic>::const_iterator iter=camAndIntrinsics.begin();
-             iter != camAndIntrinsics.end(); ++iter, ++cpt)
+             iter != camAndIntrinsics.end(); ++iter)
         {
           // check if we have to keep this timestamp
           it=imageToRemove.find(iter->first);
@@ -1027,6 +1027,9 @@ bool computeInstrinsicGPSPerImages(
               sfm_data.views[cpt] = std::make_shared<View>(img_name, cpt, focal_id, cpt, cam.width, cam.height);
               sfm_data.intrinsics[focal_id] = std::make_shared<Pinhole_Intrinsic> (cam.width, cam.height, cam.focal, cam.px0, cam.py0 );
               sfm_data.poses[cpt] = Pose3(R,C);
+
+              //update counter
+              ++cpt;
           }
 
         }
