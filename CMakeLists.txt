@@ -76,7 +76,6 @@ endif (OPENMP_FOUND)
 # pkgconfig / opencv
 # ------------------------------------------------------------------------------
 find_package(PkgConfig)
-find_package(OpenCV REQUIRED)
 
 # ------------------------------------------------------------------------------
 # libfastcal
