@@ -82,6 +82,7 @@
 #include <cereal/types/vector.hpp>
 #include <cereal/types/array.hpp>
 #include <cereal/types/string.hpp>
+#include <Eigen/Geometry>
 
 // c++ and foxel dependencies
 #include <fastcal-all.h>
@@ -229,6 +230,15 @@ bool create_gps_imu_map( SfM_Gps_Data & data,
 
       std::string   timestamp = std::to_string(rigI.sec) + "_" + os.str();
 
+      // update R to be in eyesis referential
+      Mat3  Rx;
+      Rx = Eigen::AngleAxisd( M_PI / 2.0, Vec3::UnitX());
+
+      // undo rotation made by the holder of the camera
+      Mat3  R_corr;
+      R_corr = Eigen::AngleAxisd( -30.0 * M_PI / 180.0, Vec3::UnitZ())
+             * Eigen::AngleAxisd( -10.0 * M_PI / 180.0, Vec3::UnitX());
+
       //extract rotation information
       std::vector <double>  rigR = rigI.orientation;
       if( rigR.size() == 10) // if we have imu informations
@@ -245,13 +255,7 @@ bool create_gps_imu_map( SfM_Gps_Data & data,
           if( map_rotationPerTimestamp.size() == 0 )
               RI = R;
 
-          // update R to be in eyesis referential
-          Mat3  Rx = Mat3::Zero();
-          Rx(2,1) = 1.0;
-          Rx(1,2) = -1.0;
-          Rx(0,0) = 1.0;
-
-          const Mat3 Rf = Rx * R;
+          const Mat3 Rf = R_corr * Rx * ( RI.transpose() * R );
 
           //update map
           map_rotationPerTimestamp[timestamp] = Rf;
@@ -282,7 +286,7 @@ bool create_gps_imu_map( SfM_Gps_Data & data,
               CI = C;
 
           //update map
-          map_translationPerTimestamp[timestamp] =  C-CI;
+          map_translationPerTimestamp[timestamp] =  R_corr * (C-CI);
       }
   }
 
