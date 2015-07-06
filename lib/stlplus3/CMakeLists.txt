@@ -1,7 +1,3 @@
-cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
-
-project(stlplus C CXX)
-
 FILE(GLOB LIBSLTPLUS_HPP_FILESYSTEM "${CMAKE_CURRENT_SOURCE_DIR}/filesystemSimplified/*.hpp" )
 FILE(GLOB LIBSLTPLUS_CPP_FILESYSTEM "${CMAKE_CURRENT_SOURCE_DIR}/filesystemSimplified/*.cpp" )
 

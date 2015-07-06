@@ -48,11 +48,13 @@ add_executable(listomvg
                     list_utils.cpp
                     list.cpp
                     )
+
+add_dependencies(listomvg fastcal stlplus)
+
 target_link_libraries(listomvg
   ${LISTOMVG_LIBRARY_LIST}
 )
 
-add_dependencies(listomvg fastcal stlplus)
 set_target_properties( listomvg PROPERTIES RUNTIME_OUTPUT_DIRECTORY .. )
 
 install(TARGETS listomvg DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)

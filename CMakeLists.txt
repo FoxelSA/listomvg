@@ -111,14 +111,8 @@ set(LIBFASTCAL_LIBS ${CMAKE_CURRENT_SOURCE_DIR}/lib/libfastcal/bin/libfastcal.a)
 # ------------------------------------------------------------------------------
 # stlplus
 # ------------------------------------------------------------------------------
-add_custom_target(
-  stlplus
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/stlplus3/
-  COMMAND cmake .
-  COMMAND make
-)
-
-set(LIBSTL_LIBS ${CMAKE_CURRENT_SOURCE_DIR}/lib/stlplus3/libstlplus.a)
+add_subdirectory(lib)
+set(LIBSTL_LIBS ${CMAKE_BINARY_DIR}/lib/stlplus3/libstlplus.a)
 
 # ==============================================================================
 # Include directories
